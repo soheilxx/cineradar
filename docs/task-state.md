@@ -24,3 +24,6 @@ Drei-Browser-Berichte und Bilder prüfen, Labortests, Betriebsdokumentation/Abna
 
 ## Verifikation abgeschlossen
 19/19 Domain-/Datenbanktests und 24/24 Chromium/WebKit-E2E bestanden. Beide Builds erfolgreich. Firefox-Prozessstart extern blockiert. Lighthouse 91/93/95 Performance, Accessibility100; keine Feldzielerreichung behauptet. Dokumentation und differenzierte Abnahme vorhanden. Private Sites-Veröffentlichung läuft; Livebetrieb bleibt mangels Zugängen/Betreiberfreigaben blockiert.
+
+## Private Veröffentlichung
+Die private Version wurde erfolgreich unter https://cineradar.soheil91.chatgpt.site veröffentlicht. APP_MODE=unconfigured und SYNC_ENABLED=false; lokale Testangebote werden dort nicht ausgegeben. Die endgültige SITE_URL wird als Runtime-Einstellung auf diese zurückgemeldete Adresse gesetzt. cineradar.tv bleibt unveröffentlicht. Livebetrieb und externe Abnahmepunkte bleiben wie in acceptance.md beschrieben offen.

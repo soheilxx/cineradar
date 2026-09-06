@@ -49,3 +49,5 @@ Die reproduzierbaren Dateien stehen unter `docs/evidence/`; Testcode in `test/`.
 4. Tägliche Sicherung/isolierten echten Restore, Monitoringkanal, Firefox-CI und öffentliche Validatoren durchführen; dann Domain/DNS/HTTPS freigeben.
 
 Optionale E-Mail-Alarme, Konten und Affiliate-Umschreibungen sind nicht aktiviert. Es gibt keine vorgetäuschten Nachrichten, Käufe oder Live-Erfolgsmeldungen.
+
+Private Veröffentlichung: https://cineradar.soheil91.chatgpt.site (erfolgreiche Bereitstellung, keine Live-Angebote). Der vollständige lokale Fixture-Katalog bleibt im Repository reproduzierbar. Der lokale Prüfserver wurde nach der Veröffentlichung beendet.
