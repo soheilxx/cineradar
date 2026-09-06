@@ -1,0 +1,36 @@
+
+> cineradar@0.1.0 test
+> tsx --test test/*.test.ts
+
+✔ All PostgreSQL migrations apply; same numeric ID supports movie and TV (1636.5123ms)
+✔ Atomic budget prevents overspend and resets UTC day/month independently (21.7954ms)
+✔ Reconciliation is idempotent and incomplete responses cannot delete offers (25.4384ms)
+✔ Expired leases recover; concurrent claims do not claim same job (10.8532ms)
+✔ Rate limit, contact durability, editorial preservation and slug history (10.9485ms)
+✔ Database dump restores into isolated PostgreSQL WASM instance (808.5094ms)
+✔ Lease fencing rejects former worker and allows only current owner to commit (5.2244ms)
+{"event":"provider_failed","at":"2026-09-06T20:13:36.393Z","service":"saa","code":404,"durationMs":18}
+{"event":"provider_failed","at":"2026-09-06T20:13:36.394Z","service":"saa","code":429,"durationMs":0}
+{"event":"provider_failed","at":"2026-09-06T20:13:36.394Z","service":"saa","code":401,"durationMs":0}
+{"event":"provider_failed","at":"2026-09-06T20:13:36.394Z","service":"saa","code":503,"durationMs":0}
+{"event":"provider_success","at":"2026-09-06T20:13:36.395Z","service":"saa","units":1,"durationMs":1}
+✔ Media type is part of stable identity; mismatched external mapping rejected (5.5862ms)
+✔ Subscription does not become zero-price or imply audio/subtitles (0.2559ms)
+✔ Add-ons require explicit selection; rental prices remain exact decimals (0.5942ms)
+✔ Partial series stores unit-specific prices and only evidence-backed languages (1.7178ms)
+✔ Price ranking groups by country, quality, currency, type and scope (1.1766ms)
+✔ Expiry is UTC-stable around daylight-saving transition (0.5993ms)
+✔ Accent-tolerant and typo-tolerant title search, year and duration filters (3.3775ms)
+✔ Pagination abort never advances watermark; looping cursor rejected (0.4316ms)
+✔ Provider failures distinguish empty success, 404, 429, auth, timeout and schema (21.1286ms)
+✔ JSON-LD cannot break out into script; fixture cannot run on a production origin (1.9353ms)
+✔ Backoff respects upstream retry-after and bounds jitter (0.1465ms)
+✔ Canonical prefixed TMDb identities and unnumbered granular offers are preserved (0.6072ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2887.4973
