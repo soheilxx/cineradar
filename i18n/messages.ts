@@ -1,7 +1,9 @@
 import { IntlMessageFormat } from 'intl-messageformat';
 import { locales, type Locale } from './config';
+import { experienceMessages } from './experience';
 type Five = readonly [string, string, string, string, string];
 export const messages = {
+  ...experienceMessages,
   home: ['Entdecken', 'Découvrir', 'Scopri', 'Descubrir', 'Discover'],
   movies: ['Filme', 'Films', 'Film', 'Películas', 'Films'],
   series: ['Serien', 'Séries', 'Serie', 'Series', 'TV shows'],

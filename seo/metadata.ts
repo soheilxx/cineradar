@@ -4,6 +4,7 @@ import { t, type MessageKey } from '../i18n/messages';
 import { locales, type Locale, countryName } from '../i18n/config';
 import { path, type RouteKey } from '../i18n/routes';
 import { config } from '../lib/config';
+import { meaningfulTitle, streamingContent } from './content';
 export function jsonLd(data: unknown) {
   return JSON.stringify(data)
     .replace(/</g, '\\u003c')
@@ -16,6 +17,7 @@ export function indexable(
   item: CatalogItem | null,
   key: RouteKey,
   filtered: boolean,
+  locale: Locale = 'en',
 ) {
   const c = config();
   return (
@@ -24,9 +26,10 @@ export function indexable(
     c.LEGAL_APPROVED === 'true' &&
     c.LICENSES_CONFIRMED === 'true' &&
     !filtered &&
-    !!item?.title.indexable &&
+    !!item &&
+    meaningfulTitle(item, locale) &&
     ['available', 'empty'].includes(item.snapshot.availability) &&
-    item.snapshot.freshness === 'fresh' &&
+    !!item.snapshot.checkedAt &&
     ['movie', 'tv'].includes(key)
   );
 }
@@ -37,39 +40,66 @@ export function metadata(
   item: CatalogItem | null = null,
   filtered = false,
   tail = '',
+  page = 1,
+  label?: string,
 ): Metadata {
   const c = config();
   const name = item?.title.localizations[locale].title;
   const title = name
-    ? `${name}${item.title.year ? ' (' + item.title.year + ')' : ''} · ${t(locale, 'offers')} · ${countryName(locale, market)} | Cineradar`
-    : `${t(locale, key as MessageKey)} · ${countryName(locale, market)} | Cineradar`;
+    ? `${t(locale, 'watchTitle', { title: name })}${item.title.year ? ' (' + item.title.year + ')' : ''} · ${countryName(locale, market)} | Cineradar`
+    : `${label || t(locale, key as MessageKey)} · ${countryName(locale, market)} | Cineradar`;
   const description = name
-    ? `${name} · ${countryName(locale, market)}. ${t(locale, 'subheadline')}`
-    : t(locale, 'subheadline');
+    ? streamingContent(item, locale, market).description
+    : t(locale, 'catalogIntro', {
+        title: label || t(locale, key as MessageKey),
+        country: countryName(locale, market),
+      });
   const canonical = new URL(
-    path(locale, market, key, item?.title.localizations[locale].slug || tail),
+    path(locale, market, key, item?.title.localizations[locale].slug || tail) +
+      (page > 1 ? `?page=${page}` : ''),
     c.SITE_URL,
   ).href;
   const imageUrl = new URL(
     `/api/og?locale=${locale}&market=${market}${item ? '&id=' + encodeURIComponent(item.title.id) : ''}&revision=${item?.title.revision || 'brand-1'}`,
     c.SITE_URL,
   ).href;
-  const canIndex = indexable(item, key, filtered);
+  const landing =
+    ['home', 'movies', 'series', 'providers'].includes(key) ||
+    (key === 'topics' &&
+      ['scifi', 'thriller', 'comedy', 'drama'].includes(tail));
+  const published =
+    c.APP_MODE === 'live' &&
+    c.DEPLOYMENT_ENV === 'production' &&
+    c.LEGAL_APPROVED === 'true' &&
+    c.LICENSES_CONFIRMED === 'true';
+  const canIndex =
+    indexable(item, key, filtered, locale) ||
+    (published && landing && !filtered);
   return {
     title,
     description,
     alternates: {
       canonical,
       languages: canIndex
-        ? Object.fromEntries(
-            locales.map((l) => [
-              l + '-' + market.toUpperCase(),
-              new URL(
-                path(l, market, key, item?.title.localizations[l].slug || tail),
-                c.SITE_URL,
-              ).href,
-            ]),
-          )
+        ? {
+            ...(key === 'home' ? { 'x-default': c.SITE_URL + '/' } : {}),
+            ...Object.fromEntries(
+              locales
+                .filter((l) => !item || indexable(item, key, filtered, l))
+                .map((l) => [
+                  l + '-' + market.toUpperCase(),
+                  new URL(
+                    path(
+                      l,
+                      market,
+                      key,
+                      item?.title.localizations[l].slug || tail,
+                    ) + (page > 1 ? `?page=${page}` : ''),
+                    c.SITE_URL,
+                  ).href,
+                ]),
+            ),
+          }
         : undefined,
     },
     robots: { index: canIndex, follow: !['watchlist', 'ops'].includes(key) },
@@ -126,6 +156,69 @@ export function titleSchema(item: CatalogItem, locale: Locale, market: string) {
       ...(d.runtime ? { duration: `PT${d.runtime}M` } : {}),
       genre: d.genres.map((g) => t(locale, g)),
       actor: d.cast.map((name) => ({ '@type': 'Person', name })),
+    },
+  };
+}
+
+export function breadcrumbSchema(
+  item: CatalogItem,
+  locale: Locale,
+  market: string,
+) {
+  const origin = config().SITE_URL;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        name: t(locale, 'home'),
+        item: new URL(path(locale, market), origin).href,
+      },
+      {
+        name: t(locale, item.title.type === 'movie' ? 'movies' : 'series'),
+        item: new URL(
+          path(
+            locale,
+            market,
+            item.title.type === 'movie' ? 'movies' : 'series',
+          ),
+          origin,
+        ).href,
+      },
+      {
+        name: item.title.localizations[locale].title,
+        item: new URL(
+          path(
+            locale,
+            market,
+            item.title.type,
+            item.title.localizations[locale].slug,
+          ),
+          origin,
+        ).href,
+      },
+    ].map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      ...item,
+    })),
+  };
+}
+
+export function siteSchema(locale: Locale, market: string) {
+  const c = config();
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': c.SITE_URL + '/#website',
+    url: new URL(path(locale, market), c.SITE_URL).href,
+    name: 'Cineradar',
+    inLanguage: locale,
+    description: t(locale, 'guideIntro'),
+    publisher: {
+      '@type': 'Organization',
+      name: c.OPERATOR_NAME || 'Cineradar',
+      url: c.SITE_URL,
     },
   };
 }

@@ -23,12 +23,17 @@ process.on('SIGINT', () => {
 const database = await db();
 async function drain() {
   while (!stop && Date.now() < deadline) {
-    if (await tick()) continue;
-    const pending = await database.query<{ count: number }>(
-      "SELECT count(*)::int AS count FROM jobs WHERE state IN ('queued','running') AND kind IN ('catalog-page','catalog-title')",
-    );
-    if (!pending.rows[0].count) return;
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      if (await tick()) continue;
+      const pending = await database.query<{ count: number }>(
+        "SELECT count(*)::int AS count FROM jobs WHERE state IN ('queued','running') AND kind IN ('catalog-page','catalog-title')",
+      );
+      if (!pending.rows[0].count) return;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } catch {
+      console.log(JSON.stringify({ event: 'worker_retry', code: 'database' }));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
   }
 }
 try {

@@ -1,6 +1,6 @@
 # SEO und Internationalisierung
 
-`de`, `fr`, `it`, `es`, `en` sind fünf gleichberechtigte UI-Sprachen. Die Streamingmärkte bleiben `de`, `fr`, `it`, `es`. Eine englische Oberfläche aktiviert weder UK noch USA. `/en/` führt nach `/en/de/`; die neutrale Wurzel bietet die Auswahl.
+`de`, `fr`, `it`, `es`, `en` sind fünf gleichberechtigte UI-Sprachen. Aktivierte und bestätigte Streamingmärkte sind `de`, `fr`, `it`, `es`, `us`. Auf ausdrücklichen Nutzerwunsch führt Englisch standardmäßig zum US-Markt. Die Wurzel erkennt Sprache/Land und leitet temporär zur passenden Ansicht; vollständige Sprach-/Länder-URLs bleiben direkt erreichbar. Einzelheiten und aktuelle SEO-Regeln stehen in [experience-release.md](experience-release.md); sie ersetzen die älteren Vorgaben unten.
 
 Routen werden zentral in `i18n/routes.ts` erzeugt. Beispiel: `/de/de/film/inception-27205/` und `/en/de/movie/inception-27205/`. Beim Sprachwechsel bleibt der Markt erhalten, beim Marktwechsel die Sprache. Titelwechsel benutzen die tatsächlich gespeicherten lokalisierten Slugs. Bekannte frühere Slugs leiten permanent um; erfundene Slugs und unbekannte Entitäten liefern echte 404.
 

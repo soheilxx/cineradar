@@ -130,17 +130,23 @@ export function FilterControls({
       {select(
         'sort',
         'sort',
-        (['relevance', 'title', 'year'] as const).map((value) => ({
-          value,
-          label: t(
-            locale,
-            value === 'title'
-              ? 'titleSort'
-              : value === 'year'
-                ? 'yearSort'
-                : 'relevance',
-          ),
-        })),
+        (['relevance', 'latest', 'trending', 'title', 'year'] as const).map(
+          (value) => ({
+            value,
+            label: t(
+              locale,
+              value === 'latest'
+                ? 'newestFirst'
+                : value === 'trending'
+                  ? 'trendingNow'
+                  : value === 'title'
+                    ? 'titleSort'
+                    : value === 'year'
+                      ? 'yearSort'
+                      : 'relevance',
+            ),
+          }),
+        ),
       )}
       <div className="filter-actions">
         <button className="button primary" onClick={submit}>

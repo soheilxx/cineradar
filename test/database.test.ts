@@ -6,6 +6,7 @@ import { unaccent } from '@electric-sql/pglite/contrib/unaccent';
 import { readdir, readFile } from 'node:fs/promises';
 import { fixtureCatalog } from './fixtures/catalog';
 import { importMarkets } from '../jobs/handlers';
+import { schedule } from '../jobs/scheduler';
 let d: PGlite;
 before(async () => {
   d = new PGlite({ extensions: { pg_trgm, unaccent } });
@@ -14,6 +15,68 @@ before(async () => {
 });
 after(async () => {
   await d.close();
+});
+
+test('Recurring scheduler plans a single daily refresh and includes US discovery', async () => {
+  const saved = { ...process.env };
+  Object.assign(process.env, {
+    APP_MODE: 'live',
+    DEPLOYMENT_ENV: 'local',
+    SYNC_ENABLED: 'true',
+    SAA_DAILY_BUDGET: '2500',
+    SAA_MONTHLY_BUDGET: '100000',
+    SESSION_SECRET: 'x'.repeat(32),
+    DATABASE_URL: 'postgres://test',
+    TMDB_READ_ACCESS_TOKEN: 'test',
+    SAA_API_KEY: 'test',
+    ENABLED_MARKETS: 'de,fr,it,es,us',
+  });
+  try {
+    const original = fixtureCatalog()[0].title;
+    for (const id of [910000001, 910000002])
+      await d.query('SELECT save_title($1)', [
+        JSON.stringify({ ...original, id: 'movie:' + id, tmdbId: id }),
+      ]);
+    const adapter = {
+      query: async <T>(sql: string, params: unknown[] = []) => ({
+        rows: (await d.query<T>(sql, params)).rows,
+      }),
+    };
+    await schedule(new Date('2026-09-07T12:00:00Z'), adapter);
+    const first = (
+      await d.query("SELECT key FROM jobs WHERE key LIKE 'daily:%:2026-09-07'")
+    ).rows.length;
+    await d.query('SELECT save_title($1)', [
+      JSON.stringify({ ...original, id: 'movie:910000003', tmdbId: 910000003 }),
+    ]);
+    await schedule(new Date('2026-09-07T12:01:00Z'), adapter);
+    assert.equal(
+      (
+        await d.query(
+          "SELECT key FROM jobs WHERE key LIKE 'daily:%:2026-09-07'",
+        )
+      ).rows.length,
+      first,
+    );
+    assert.equal(
+      (
+        await d.query(
+          "SELECT key FROM jobs WHERE kind='catalog-page' AND payload->>'market'='us'",
+        )
+      ).rows.length,
+      4,
+    );
+    await d.query(
+      "DELETE FROM jobs WHERE key LIKE '%2026-09-07%' OR kind='changes'",
+    );
+    await d.query(
+      'DELETE FROM titles WHERE tmdb_id BETWEEN 910000001 AND 910000003',
+    );
+  } finally {
+    for (const key of Object.keys(process.env))
+      if (!(key in saved)) delete process.env[key];
+    Object.assign(process.env, saved);
+  }
 });
 test('All PostgreSQL migrations apply; same numeric ID supports movie and TV', async () => {
   const title = fixtureCatalog()[0].title;

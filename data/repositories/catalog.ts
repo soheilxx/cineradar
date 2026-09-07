@@ -137,14 +137,38 @@ async function loadCatalog(
       conditions.push(
         sql`EXISTS(SELECT 1 FROM offers o WHERE ${sql.join(oc, sql` AND `)})`,
       );
+    let discoveryIds: string[] = [];
+    if (f.sort === 'latest' || f.sort === 'trending') {
+      const ranking = await (
+        await db()
+      ).query<{ data: { ids: string[] } }>(
+        "SELECT data FROM operations WHERE key LIKE $1 AND updated_at>now()-interval '7 days' ORDER BY (data->>'page')::int,key",
+        [
+          `ranking:${market}:${f.type || '%'}:${f.sort === 'latest' ? 'release_date' : 'popularity_1week'}:%`,
+        ],
+      );
+      discoveryIds = [
+        ...new Set(ranking.rows.flatMap((row) => row.data.ids || [])),
+      ];
+      if (!f.type) {
+        const movies = discoveryIds.filter((id) => id.startsWith('movie:'));
+        const shows = discoveryIds.filter((id) => id.startsWith('tv:'));
+        discoveryIds = Array.from(
+          { length: Math.max(movies.length, shows.length) },
+          (_, i) => [movies[i], shows[i]].filter(Boolean),
+        ).flat();
+      }
+    }
     const order =
       f.sort === 'title'
-        ? sql`l.title ASC`
-        : f.sort === 'year'
-          ? sql`(t.data->>'year')::int DESC NULLS LAST`
-          : q
-            ? sql`CASE WHEN lower(l.title)=lower(${q}) THEN 0 ELSE 1 END,t.updated_at DESC`
-            : sql`CASE WHEN EXISTS(SELECT 1 FROM offers available WHERE available.title_id=t.id AND available.market=${market} AND (available.expires_at IS NULL OR available.expires_at>=now())) THEN 0 ELSE 1 END,COALESCE((t.data->>'rating')::numeric,0)*COALESCE((t.data->>'votes')::numeric,0)/(COALESCE((t.data->>'votes')::numeric,0)+500) DESC,t.id ASC`;
+        ? sql`l.title ASC,t.id ASC`
+        : f.sort === 'latest' || f.sort === 'trending'
+          ? sql`array_position(${discoveryIds}::text[],t.id) ASC NULLS LAST,(t.data->>'year')::int DESC NULLS LAST,(t.data->>'votes')::int DESC,t.id`
+          : f.sort === 'year'
+            ? sql`(t.data->>'year')::int DESC NULLS LAST,t.id ASC`
+            : q
+              ? sql`CASE WHEN lower(l.title)=lower(${q}) THEN 0 ELSE 1 END,t.updated_at DESC,t.id ASC`
+              : sql`CASE WHEN EXISTS(SELECT 1 FROM offers available WHERE available.title_id=t.id AND available.market=${market} AND (available.expires_at IS NULL OR available.expires_at>=now())) THEN 0 ELSE 1 END,COALESCE((t.data->>'rating')::numeric,0)*COALESCE((t.data->>'votes')::numeric,0)/(COALESCE((t.data->>'votes')::numeric,0)+500) DESC,t.id ASC`;
     const query =
       sql`SELECT t.data,s.availability,s.checked_at,s.attempt_at,s.error_code,s.revision,COALESCE((SELECT jsonb_agg(o.data) FROM offers o WHERE o.title_id=t.id AND o.market=${market} AND(o.expires_at IS NULL OR o.expires_at>=now())),'[]'::jsonb) AS offers,count(*) OVER() AS total FROM titles t JOIN localizations l ON l.title_id=t.id AND l.locale=${locale} LEFT JOIN snapshots s ON s.title_id=t.id AND s.market=${market} WHERE ${sql.join(conditions, sql` AND `)} ORDER BY ${order} LIMIT ${limit} OFFSET ${((f.page || 1) - 1) * limit}`.compile(
         compiler,

@@ -101,11 +101,19 @@ export async function handle(job: Job) {
       page < 1 ||
       !Number.isInteger(maxPages) ||
       maxPages < 1 ||
-      maxPages > 100 ||
+      maxPages > 500 ||
       page > maxPages
     )
       throw new ProviderError('schema');
-    const result = await saa.catalog(market, type, cursor);
+    const order = (job.payload.order || 'popularity_1year') as
+      | 'popularity_1year'
+      | 'popularity_1week'
+      | 'release_date';
+    if (
+      !['popularity_1year', 'popularity_1week', 'release_date'].includes(order)
+    )
+      throw new ProviderError('schema');
+    const result = await saa.catalog(market, type, cursor, order);
     if (
       result.hasMore &&
       (!result.nextCursor ||
@@ -138,11 +146,24 @@ export async function handle(job: Job) {
           page: page + 1,
           maxPages,
           batch,
+          order,
           cursor: result.nextCursor,
           seen: [...seen, ...(cursor ? [cursor] : [])],
         },
       );
     }
+    await database.query(
+      'INSERT INTO operations(key,data) VALUES($1,$2) ON CONFLICT(key) DO UPDATE SET data=EXCLUDED.data,updated_at=now()',
+      [
+        `ranking:${market}:${type}:${order}:${page}`,
+        JSON.stringify({
+          page,
+          ids: result.shows.map(
+            (show) => `${type}:${show.tmdbId.split('/').at(-1)}`,
+          ),
+        }),
+      ],
+    );
     await database.query(
       'INSERT INTO operations(key,data) VALUES($1,$2) ON CONFLICT(key) DO UPDATE SET data=EXCLUDED.data,updated_at=now()',
       [

@@ -5,5 +5,5 @@
   "devCommand": "npm run dev:node",
   "outputDirectory": ".next",
   "regions": ["fra1"],
-  "crons": [{ "path": "/api/cron/", "schedule": "0 3 * * *" }]
+  "crons": [{ "path": "/api/cron/", "schedule": "* * * * *" }]
 }

@@ -66,14 +66,20 @@ else if (command === 'migrate') {
   const dry = process.argv.includes('--dry-run');
   const at = process.argv.indexOf('--pages');
   const pages = at < 0 ? 25 : Number(process.argv[at + 1]);
-  if (!Number.isInteger(pages) || pages < 1 || pages > 100)
-    throw Error('--pages must be between 1 and 100');
-  const batch = new Date().toISOString().slice(0, 10) + ':' + pages;
+  if (!Number.isInteger(pages) || pages < 1 || pages > 500)
+    throw Error('--pages must be between 1 and 500');
+  const orderAt = process.argv.indexOf('--order');
+  const order = orderAt < 0 ? 'popularity_1year' : process.argv[orderAt + 1];
+  if (!['popularity_1year', 'popularity_1week', 'release_date'].includes(order))
+    throw Error('Invalid catalog order');
+  const batch =
+    new Date().toISOString().slice(0, 10) + ':' + order + ':' + pages;
   console.log(
     JSON.stringify({
       dryRun: dry,
       markets: c.markets,
       pagesPerType: pages,
+      order,
       maxSaaRequests: c.markets.length * 2 * pages,
       maxTitleMarketPairs: c.markets.length * 30 * pages,
       metadataLanguages: 5,
@@ -85,7 +91,7 @@ else if (command === 'migrate') {
         await enqueue(
           `catalog-page:${batch}:${market}:${type}:1`,
           'catalog-page',
-          { market, type, page: 1, maxPages: pages, batch },
+          { market, type, page: 1, maxPages: pages, batch, order },
         );
       }
     await (await db()).close?.();

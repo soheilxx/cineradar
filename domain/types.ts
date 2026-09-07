@@ -113,7 +113,7 @@ export interface Filters {
   subtitles?: string;
   maxMinutes?: number;
   year?: number;
-  sort?: 'relevance' | 'title' | 'year';
+  sort?: 'relevance' | 'title' | 'year' | 'latest' | 'trending';
   page?: number;
   scope?: 'new' | 'leaving' | 'free' | 'finder';
   mine?: string[];

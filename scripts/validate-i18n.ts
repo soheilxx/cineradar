@@ -12,12 +12,20 @@ for (const [key, values] of Object.entries(messages)) {
       title: 'Cineradar',
       type: 'Film',
       year: 2026,
+      country: 'Deutschland',
+      provider: 'Netflix',
+      providers: 'Netflix und Prime Video',
+      qualities: 'HD und 4K',
+      seasons: '1, 2',
+      answer: 'Bestätigtes Angebot',
+      loaded: 24,
+      total: 48,
     });
 }
 for (const locale of locales)
-  for (const market of ['de', 'fr', 'it', 'es'])
+  for (const market of ['de', 'fr', 'it', 'es', 'us'])
     if (!path(locale, market).startsWith(`/${locale}/${market}/`))
       throw new Error('Context routing mismatch');
 console.log(
-  `${Object.keys(messages).length} complete message keys; 5 languages; 20 routing contexts.`,
+  `${Object.keys(messages).length} complete message keys; 5 languages; 25 routing contexts.`,
 );

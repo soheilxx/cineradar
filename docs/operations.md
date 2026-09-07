@@ -1,5 +1,7 @@
 # Betrieb und Wiederanlauf
 
+**Aktualisierung vom 7. September:** [experience-release.md](experience-release.md) beschreibt den aktuellen Tarif mit 100.000 SAA-Anfragen, fünf Märkte, 500 tägliche Refreshes und den ausführenden Minutentakt auf Vercel. Die folgenden Einrichtungswerte des ersten Verbindungstests sind historisch; ein separater Workerprozess ist auf Vercel nicht mehr erforderlich.
+
 ## Einrichtung am 7. September 2026
 
 - Neon-Ressource `cineradar`, Frankfurt, PostgreSQL 18.6, vom Nutzer freigegebener Launch-Tarif; mit Vercel Preview und Development verbunden.

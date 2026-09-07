@@ -1,5 +1,7 @@
 # Katalogausbau und Veröffentlichung, 7. September 2026
 
+**Historischer erster Release.** Das neue Kontingent, der größere Import und der automatische Vercel-Betrieb sind in [experience-release.md](experience-release.md) dokumentiert.
+
 Der abgeschlossene Import umfasst **1.409 eindeutige Filme/Serien und 68.032 Angebote** einschließlich Staffeln und Folgen. 200 paginierte Quellenabfragen (25 Film- und 25 Serienseiten pro Markt) lieferten 3.000 Titel-/Marktzuordnungen; 2.997 wurden verarbeitet. Drei bei TMDb nicht auffindbare Zuordnungen bleiben als `missing` gekennzeichnet. Keine Importjobs sind mehr offen. Der Datenbestand ist eine umfangreiche Startauswahl, kein vollständiger Anbieterindex.
 
 `npm run import:catalog -- --pages 25 --dry-run` zeigt die Obergrenze vor einem Import. Ohne `--dry-run` werden persistente Seitenjobs angelegt. `npm run import:drain -- --seconds 1800` verarbeitet sie mit vier Arbeitsschleifen und beendet sich nach Abschluss oder Zeitlimit. Wiederholungen desselben Tages/Umfangs sind dedupliziert. Filterergebnisse aktualisieren ausschließlich den angefragten Markt; andere Länder werden nicht als leer gewertet. Das wurde mit PostgreSQL getestet.

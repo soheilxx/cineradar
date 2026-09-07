@@ -5,7 +5,6 @@ import {
   Compass,
   Film,
   Info,
-  Play,
   Sparkles,
 } from 'lucide-react';
 import type { CatalogItem, Filters, Provider } from '@/domain/types';
@@ -28,7 +27,17 @@ import {
   PaginationItem,
   PaginationLink,
 } from '@/components/ui/pagination';
-import { titleSchema, jsonLd } from '@/seo/metadata';
+import {
+  titleSchema,
+  jsonLd,
+  breadcrumbSchema,
+  siteSchema,
+} from '@/seo/metadata';
+import { streamingContent } from '@/seo/content';
+import { LazyCatalog } from './lazy-catalog';
+import { catalogCard } from '@/domain/cards';
+import { HomeShelf } from './home-shelf';
+import { FeaturedSpotlight } from './featured-spotlight';
 import { imageVariant, imageSet } from '@/domain/artwork';
 export function PageHeading({
   locale: _locale,
@@ -61,23 +70,36 @@ export function Empty({
     </div>
   );
 }
+export interface HomeCollections {
+  latestMovies: CatalogItem[];
+  latestSeries: CatalogItem[];
+  recent: CatalogItem[];
+  free: CatalogItem[];
+  providers: { id: string; name: string; items: CatalogItem[] }[];
+}
 export function HomePage({
   locale,
   market,
   items,
   providers,
   unavailable,
+  collections,
 }: {
   locale: Locale;
   market: string;
   items: CatalogItem[];
   providers: Provider[];
   unavailable: boolean;
+  collections: HomeCollections;
 }) {
   const feature = items[0];
   const second = items[6] || items[1];
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(siteSchema(locale, market)) }}
+      />
       <section className="search-hero">
         <div className="hero-title">
           <div>
@@ -101,60 +123,24 @@ export function HomePage({
       <ProviderSelection {...{ locale, market, providers }} />
       {feature ? (
         <section className="feature-grid">
-          <article className="spotlight">
-            <img
-              className="feature-image"
-              src={
-                feature.title.backdrop || feature.title.poster || '/cinema.webp'
-              }
-              alt=""
-              width="1280"
-              height="720"
-              fetchPriority="high"
-              srcSet={imageSet(
-                feature.title.backdrop ||
-                  feature.title.poster ||
-                  '/cinema.webp',
-                [300, 780, 1280],
-              )}
-              sizes="(max-width:700px) 100vw, 65vw"
-            />
-            <div className="feature-gradient" />
-            <div className="spotlight-top">
-              <span className="film-label">
-                <Play size={13} />
-                {t(locale, 'picks')}
-              </span>
-              <span className="feature-number">
-                01 / {String(items.length).padStart(2, '0')}
-              </span>
-            </div>
-            <div className="spotlight-copy">
-              <p className="eyebrow">
-                {feature.title.genres
-                  .map((g) => t(locale, g))
-                  .slice(0, 2)
-                  .join(' / ')}
-              </p>
-              <h2>{feature.title.localizations[locale].title}</h2>
-              <p>
-                {feature.title.year} <span>·</span>{' '}
-                {feature.title.runtime
-                  ? t(locale, 'minutes', { count: feature.title.runtime })
-                  : t(locale, feature.title.type)}
-              </p>
-              <div className="feature-actions">
-                <a
-                  className="button primary"
-                  href={titlePath(feature, locale, market)}
-                >
-                  {t(locale, 'offers')}
-                  <ArrowUpRight size={18} />
-                </a>
-                <SaveButton id={feature.title.id} {...{ locale, market }} />
-              </div>
-            </div>
-          </article>
+          <FeaturedSpotlight
+            locale={locale}
+            market={market}
+            items={items.slice(0, 5).map((entry) => ({
+              id: entry.title.id,
+              title: entry.title.localizations[locale].title,
+              image:
+                entry.title.backdrop || entry.title.poster || '/cinema.webp',
+              href: titlePath(entry, locale, market),
+              year: entry.title.year,
+              type: entry.title.type,
+              genres: entry.title.genres
+                .slice(0, 2)
+                .map((genre) => t(locale, genre))
+                .join(' / '),
+              overview: entry.title.localizations[locale].overview,
+            }))}
+          />
           <div className="feature-side">
             {second && (
               <a
@@ -205,7 +191,7 @@ export function HomePage({
         <div className="section-heading">
           <div>
             <span className="eyebrow gold">02 — {t(locale, 'home')}</span>
-            <h2>{t(locale, 'picks')}</h2>
+            <h2>{t(locale, 'trendingNow')}</h2>
           </div>
           <a className="text-link" href={path(locale, market, 'movies')}>
             {t(locale, 'browseAll')}
@@ -243,6 +229,100 @@ export function HomePage({
           ))}
         </div>
       </section>
+      <HomeShelf
+        locale={locale}
+        title={t(locale, 'latestMovies')}
+        intro={t(locale, 'latestMoviesIntro', {
+          country: countryName(locale, market),
+        })}
+        href={path(locale, market, 'movies')}
+      >
+        <PosterGrid
+          items={collections.latestMovies}
+          locale={locale}
+          market={market}
+        />
+      </HomeShelf>
+      <HomeShelf
+        locale={locale}
+        title={t(locale, 'latestSeries')}
+        intro={t(locale, 'latestSeriesIntro', {
+          country: countryName(locale, market),
+        })}
+        href={path(locale, market, 'series')}
+      >
+        <PosterGrid
+          items={collections.latestSeries}
+          locale={locale}
+          market={market}
+        />
+      </HomeShelf>
+      {!!collections.recent.length && (
+        <HomeShelf
+          locale={locale}
+          title={t(locale, 'new')}
+          intro={t(locale, 'newDefinition')}
+          href={path(locale, market, 'new')}
+        >
+          <PosterGrid
+            items={collections.recent}
+            locale={locale}
+            market={market}
+          />
+        </HomeShelf>
+      )}
+      {collections.providers
+        .filter((provider) => provider.items.length)
+        .map((provider) => (
+          <HomeShelf
+            key={provider.id}
+            locale={locale}
+            title={t(locale, 'providerPicks', { provider: provider.name })}
+            href={path(locale, market, 'providers', provider.id)}
+          >
+            <PosterGrid
+              items={provider.items}
+              locale={locale}
+              market={market}
+            />
+          </HomeShelf>
+        ))}
+      {!!collections.free.length && (
+        <HomeShelf
+          locale={locale}
+          title={t(locale, 'free')}
+          intro={t(locale, 'freeDefinition')}
+          href={path(locale, market, 'free')}
+        >
+          <PosterGrid
+            items={collections.free}
+            locale={locale}
+            market={market}
+          />
+        </HomeShelf>
+      )}
+      <section className="section home-guide">
+        <p className="eyebrow gold">Cineradar</p>
+        <h2>
+          {t(locale, 'streamingGuide', {
+            country: countryName(locale, market),
+          })}
+        </h2>
+        <p>{t(locale, 'guideIntro')}</p>
+        <p>
+          {t(locale, 'guideCountry', { country: countryName(locale, market) })}
+        </p>
+        <nav className="context-links">
+          <a className="button" href={path(locale, market, 'finder')}>
+            {t(locale, 'finder')}
+            <ArrowRight size={18} />
+          </a>
+          <a className="text-link" href={path(locale, market, 'myProviders')}>
+            {t(locale, 'myProviders')}
+            <ArrowRight size={18} />
+          </a>
+        </nav>
+      </section>
     </>
   );
 }
@@ -277,13 +357,32 @@ export function ListingPage({
           ? t(locale, 'leavingDefinition')
           : route === 'free'
             ? t(locale, 'freeDefinition')
-            : undefined;
+            : t(locale, 'catalogIntro', {
+                title,
+                country: countryName(locale, market),
+              });
   const page = filters.page || 1;
   const pages = Math.max(1, Math.ceil(total / 24));
   const link = (n: number) => {
     const p = new URLSearchParams();
     for (const [key, v] of Object.entries(filters))
-      if (v && key !== 'scope' && key !== 'page')
+      if (
+        v &&
+        key !== 'scope' &&
+        key !== 'page' &&
+        !(
+          key === 'type' &&
+          ((route === 'movies' && v === 'movie') ||
+            (route === 'series' && v === 'tv'))
+        ) &&
+        !(
+          key === 'sort' &&
+          v === 'latest' &&
+          ['movies', 'series'].includes(route)
+        ) &&
+        !(key === 'provider' && route === 'providers') &&
+        !(key === 'genre' && route === 'topics')
+      )
         p.set(key, Array.isArray(v) ? v.join(',') : String(v));
     p.set('page', String(n));
     return '?' + p.toString();
@@ -308,7 +407,11 @@ export function ListingPage({
             )}
           </div>
           {items.length ? (
-            <PosterGrid {...{ items, locale, market }} />
+            <LazyCatalog
+              key={JSON.stringify(filters)}
+              initialItems={items.map((item) => catalogCard(item, locale))}
+              {...{ locale, market, filters, total }}
+            />
           ) : (
             <Empty locale={locale} unavailable={unavailable} />
           )}
@@ -355,20 +458,26 @@ export function DetailPage({
   item,
   locale,
   market,
+  similar = [],
 }: {
   item: CatalogItem;
   locale: Locale;
   market: string;
+  similar?: CatalogItem[];
 }) {
   const d = item.title;
   const l = d.localizations[locale];
   const s = item.snapshot;
+  const content = streamingContent(item, locale, market);
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: jsonLd(titleSchema(item, locale, market)),
+          __html: jsonLd([
+            titleSchema(item, locale, market),
+            breadcrumbSchema(item, locale, market),
+          ]),
         }}
       />
       <nav className="breadcrumbs">
@@ -449,7 +558,7 @@ export function DetailPage({
         <div className="section-heading">
           <div>
             <p className="eyebrow gold">{countryName(locale, market)}</p>
-            <h2>{t(locale, 'offers')}</h2>
+            <h2>{content.heading}</h2>
           </div>
           {s.checkedAt && (
             <span className="freshness">
@@ -464,6 +573,10 @@ export function DetailPage({
               UTC
             </span>
           )}
+        </div>
+        <div className="streaming-answer">
+          <p>{content.intro}</p>
+          <p>{content.answer}</p>
         </div>
         {s.freshness === 'stale' || s.freshness === 'overdue' ? (
           <p className="notice warning">
@@ -521,7 +634,7 @@ export function DetailPage({
       )}
       <section id="info" className="section info-grid">
         <div>
-          <h2>{t(locale, 'info')}</h2>
+          <h2>{t(locale, 'aboutTitle', { title: l.title })}</h2>
           <p>
             {l.overview ||
               t(locale, 'facts', {
@@ -554,6 +667,35 @@ export function DetailPage({
           </a>
         </aside>
       </section>
+      <section className="section title-questions">
+        <h2>{t(locale, 'titleQuestions', { title: l.title })}</h2>
+        <div className="question-grid">
+          {content.questions.map((question) => (
+            <article key={question.heading}>
+              <h3>{question.heading}</h3>
+              <p>{question.body}</p>
+            </article>
+          ))}
+        </div>
+        <nav className="context-links">
+          {content.providers.map((provider) => (
+            <a
+              className="text-link"
+              key={provider.id}
+              href={path(locale, market, 'providers', provider.id)}
+            >
+              {t(locale, 'providerPicks', { provider: provider.name })}
+              <ArrowUpRight size={15} />
+            </a>
+          ))}
+        </nav>
+      </section>
+      {!!similar.length && (
+        <section className="section">
+          <h2>{t(locale, 'similarTitles')}</h2>
+          <PosterGrid items={similar} locale={locale} market={market} />
+        </section>
+      )}
     </>
   );
 }
@@ -616,6 +758,7 @@ export function InfoPage({
       'privacyHosting',
       'privacyContact',
       'privacyRights',
+      'contextPrivacy',
     ],
     legal: ['legalIntro'],
     credits: ['aboutText'],

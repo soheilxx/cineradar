@@ -1,5 +1,5 @@
 import { notFound, permanentRedirect } from 'next/navigation';
-import { z } from 'zod';
+import { filterSchema } from '@/lib/catalog-filters';
 import { isLocale, locales } from '@/i18n/config';
 import { path, routeFor } from '@/i18n/routes';
 import { t } from '@/i18n/messages';
@@ -29,23 +29,6 @@ type Props = {
   params: Promise<{ locale: string; market: string; segments?: string[] }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-const filterSchema = z.object({
-  q: z.string().max(120).optional(),
-  type: z.enum(['movie', 'tv']).optional(),
-  genre: z.string().max(30).optional(),
-  provider: z.string().max(100).optional(),
-  offerType: z
-    .enum(['subscription', 'addon', 'free', 'rent', 'buy'])
-    .optional(),
-  quality: z.enum(['sd', 'hd', 'qhd', 'uhd']).optional(),
-  audio: z.string().max(3).optional(),
-  subtitles: z.string().max(3).optional(),
-  maxMinutes: z.coerce.number().int().min(1).max(600).optional(),
-  year: z.coerce.number().int().min(1880).max(2200).optional(),
-  page: z.coerce.number().int().min(1).max(1000).default(1),
-  sort: z.enum(['relevance', 'title', 'year']).optional(),
-  mine: z.string().max(2000).optional(),
-});
 async function resolve(params: Props['params']) {
   const p = await params;
   if (!isLocale(p.locale) || !config().markets.includes(p.market)) notFound();
@@ -69,13 +52,22 @@ async function resolve(params: Props['params']) {
 }
 export async function generateMetadata({ params, searchParams }: Props) {
   const r = await resolve(params);
+  const search = await searchParams;
+  const label =
+    r.tail && r.route === 'providers'
+      ? (await providers(r.market)).find((p) => p.id === r.tail)?.name
+      : r.tail && r.route === 'topics'
+        ? t(r.locale, r.tail as 'drama')
+        : undefined;
   return metadata(
     r.locale,
     r.market,
     r.route,
     r.item,
-    Object.keys(await searchParams).length > 0,
+    Object.keys(search).some((key) => key !== 'page'),
     r.tail,
+    Number(search.page || 1),
+    label,
   );
 }
 export default async function Page({ params, searchParams }: Props) {
@@ -90,8 +82,14 @@ export default async function Page({ params, searchParams }: Props) {
   const { mine, ...rest } = filtered.data;
   const filters: Filters = { ...rest, mine: mine?.split(',') };
   const ps = await providers(market);
-  if (route === 'movies') filters.type = 'movie';
-  if (route === 'series') filters.type = 'tv';
+  if (route === 'movies') {
+    filters.type = 'movie';
+    filters.sort ||= 'latest';
+  }
+  if (route === 'series') {
+    filters.type = 'tv';
+    filters.sort ||= 'latest';
+  }
   if (['new', 'leaving', 'free', 'finder'].includes(route))
     filters.scope = route as Filters['scope'];
   if (route === 'providers' && tail) {
@@ -133,10 +131,69 @@ export default async function Page({ params, searchParams }: Props) {
     ]),
   );
   let body: React.ReactNode;
-  if (item) body = <DetailPage {...{ item, locale, market }} />;
-  else if (route === 'home') {
-    const data = await catalog(locale, market, { scope: 'finder' }, 12);
-    body = <HomePage {...{ locale, market, providers: ps, ...data }} />;
+  if (item) {
+    const related = await catalog(
+      locale,
+      market,
+      { type: item.title.type, genre: item.title.genres[0], scope: 'finder' },
+      7,
+    );
+    body = (
+      <DetailPage
+        {...{ item, locale, market }}
+        similar={related.items
+          .filter((entry) => entry.title.id !== item.title.id)
+          .slice(0, 6)}
+      />
+    );
+  } else if (route === 'home') {
+    const [data, latestMovies, latestSeries, recent, free, ...providerRows] =
+      await Promise.all([
+        catalog(locale, market, { scope: 'finder', sort: 'trending' }, 12),
+        catalog(
+          locale,
+          market,
+          { scope: 'finder', type: 'movie', sort: 'latest' },
+          12,
+        ),
+        catalog(
+          locale,
+          market,
+          { scope: 'finder', type: 'tv', sort: 'latest' },
+          12,
+        ),
+        catalog(locale, market, { scope: 'new', sort: 'latest' }, 12),
+        catalog(
+          locale,
+          market,
+          { scope: 'free', type: 'movie', sort: 'latest' },
+          12,
+        ),
+        ...['netflix', 'prime', 'disney'].map((provider) =>
+          catalog(
+            locale,
+            market,
+            { provider, scope: 'finder', sort: 'trending' },
+            12,
+          ),
+        ),
+      ]);
+    const collections = {
+      latestMovies: latestMovies.items,
+      latestSeries: latestSeries.items,
+      recent: recent.items,
+      free: free.items,
+      providers: providerRows.map((row, index) => ({
+        id: ['netflix', 'prime', 'disney'][index],
+        name:
+          ps.find((p) => p.id === ['netflix', 'prime', 'disney'][index])
+            ?.name || ['Netflix', 'Prime Video', 'Disney+'][index],
+        items: row.items,
+      })),
+    };
+    body = (
+      <HomePage {...{ locale, market, providers: ps, ...data, collections }} />
+    );
   } else if (route === 'watchlist')
     body = (
       <>

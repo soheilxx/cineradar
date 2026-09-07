@@ -88,21 +88,36 @@ export function ProviderSelection({
         </span>
       </div>
       <div className="provider-chips">
-        {providers.slice(0, 5).map((p) => (
-          <button
-            key={p.id}
-            aria-pressed={selection.includes(p.id)}
-            className={'provider-chip provider-' + p.id}
-            onClick={() => change(p.id)}
-          >
-            {p.logo ? (
-              <img src={p.logo} alt={p.name} width="92" height="36" />
-            ) : (
-              <span>{p.name}</span>
-            )}
-            {selection.includes(p.id) && <Check size={14} />}
-          </button>
-        ))}
+        {[...providers]
+          .sort((a, b) => {
+            const order = [
+              'netflix',
+              'prime',
+              'disney',
+              'apple',
+              'hbo',
+              'hulu',
+            ];
+            const rank = (id: string) =>
+              order.includes(id) ? order.indexOf(id) : order.length;
+            return rank(a.id) - rank(b.id);
+          })
+          .slice(0, 5)
+          .map((p) => (
+            <button
+              key={p.id}
+              aria-pressed={selection.includes(p.id)}
+              className={'provider-chip provider-' + p.id}
+              onClick={() => change(p.id)}
+            >
+              {p.logo ? (
+                <img src={p.logo} alt={p.name} width="92" height="36" />
+              ) : (
+                <span>{p.name}</span>
+              )}
+              {selection.includes(p.id) && <Check size={14} />}
+            </button>
+          ))}
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger

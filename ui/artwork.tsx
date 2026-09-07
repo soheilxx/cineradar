@@ -24,9 +24,9 @@ export function Artwork({
   const element = useRef<HTMLImageElement>(null);
   useEffect(() => {
     // A cached/network error can fire before React attaches its event listener.
-    const img=element.current;
-    if(img?.complete && img.naturalWidth===0) setFailed(true);
-  },[src]);
+    const img = element.current;
+    if (img?.complete && img.naturalWidth === 0) setFailed(true);
+  }, [src]);
   if (!src || failed)
     return (
       <div

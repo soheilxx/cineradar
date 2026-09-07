@@ -1,6 +1,6 @@
 # Cineradar — Arbeitsstand, 6. September 2026
 
-**Aktueller Stand vom 7. September:** 1.409 Titel und 68.032 Angebote; Betreiberangaben Wiresoft AG eingerichtet. Siehe [catalog-release.md](catalog-release.md). Frühere Angaben zu zehn Titeln und fehlenden Zugängen unten sind historisch.
+**Aktueller Stand vom 7. September:** Öffentliche Domain cineradar.tv, Betreiber Wiresoft AG und beide APIs eingerichtet. Der Katalog wächst über 3.000 Titel hinaus; der Nutzer hat 100.000 SAA-Anfragen/Monat freigegeben und USA als englischen Standardmarkt verlangt. Aktuelle Änderungen, Budgets, Vercel-Verarbeitung und Prüfungen stehen in [experience-release.md](experience-release.md). Frühere Angaben zu zehn Titeln, fehlenden Zugängen und deaktiviertem Sync unten sind historisch.
 
 ## Aktualisierung vom 7. September 2026
 

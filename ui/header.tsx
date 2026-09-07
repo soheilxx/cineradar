@@ -35,6 +35,7 @@ export function Header({
 }) {
   const [open, setOpen] = useState(false);
   function navigate(url: string, l: string, m: string) {
+    document.cookie = `cr_context=${l}.${m}; Path=/; Max-Age=31536000; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
     try {
       localStorage.setItem(
         'cineradar:context',
@@ -85,7 +86,18 @@ export function Header({
                 value,
                 label: languageNames[value],
               }))}
-              onChange={(v) => navigate(languageLinks[v], v, market)}
+              onChange={(v) => {
+                const nextMarket =
+                  v === 'en' && markets.includes('us') ? 'us' : market;
+                navigate(
+                  languageLinks[v].replace(
+                    /^\/[a-z]{2}\/[a-z]{2}\//,
+                    `/${v}/${nextMarket}/`,
+                  ),
+                  v,
+                  nextMarket,
+                );
+              }}
             />
             <a
               className="nav-watch"

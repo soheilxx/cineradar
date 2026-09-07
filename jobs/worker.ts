@@ -42,20 +42,28 @@ export async function tick() {
     });
   } catch (e) {
     const code = e instanceof ProviderError ? e.code : 'internal';
+    const deferred = code === 'budget' || code === 'quota';
     const dead =
-      job.attempts >= 6 || ['auth', 'schema', 'missing'].includes(code);
-    const wait = backoff(
+      !deferred &&
+      (job.attempts >= 6 || ['auth', 'schema', 'missing'].includes(code));
+    let wait = backoff(
       job.attempts,
       e instanceof ProviderError ? e.retryAfter : 0,
     );
+    if (code === 'budget') {
+      const tomorrow = new Date();
+      tomorrow.setUTCHours(24, 1, 0, 0);
+      wait = tomorrow.getTime() - Date.now();
+    } else if (code === 'quota') wait = Math.max(wait, 3600000);
     await database.query(
-      'UPDATE jobs SET state=$3,error_code=$4,run_at=$5,lock_until=null WHERE id=$1 AND lock_token=$2',
+      'UPDATE jobs SET state=$3,error_code=$4,run_at=$5,lock_until=null,attempts=GREATEST(0,attempts-$6) WHERE id=$1 AND lock_token=$2',
       [
         job.id,
         token,
         dead ? 'dead' : 'queued',
         code,
         new Date(Date.now() + wait).toISOString(),
+        deferred ? 1 : 0,
       ],
     );
     log('job_failed', { kind: job.kind, id: job.id, code });

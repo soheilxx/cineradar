@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import './globals.css';
+import './experience.css';
 export const metadata: Metadata = {
   icons: { icon: '/icon.svg', apple: '/apple-touch-icon.png' },
   title: 'Cineradar · Find your next movie night',
@@ -18,7 +19,13 @@ export default async function RootLayout({
     <html lang={language} className="dark">
       <head>
         <link rel="preconnect" href="https://image.tmdb.org" />
-        <link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous"/>
+        <link
+          rel="preload"
+          href="/fonts/manrope-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
       </head>
       <body>{children}</body>
     </html>

@@ -120,9 +120,11 @@ export function OfferList({
               </div>
             </div>
             <div className="offer-properties">
-              <span className="quality-badge">
-                {o.quality?.toUpperCase() || t(locale, 'qualityUnknown')}
-              </span>
+              {o.quality && (
+                <span className="quality-badge">
+                  {o.quality === 'uhd' ? '4K' : o.quality.toUpperCase()}
+                </span>
+              )}
               <span>
                 {t(
                   locale,
@@ -138,11 +140,14 @@ export function OfferList({
                 {o.episode !== null &&
                   ` · ${t(locale, 'episode', { number: o.episode })}`}
               </span>
-              <small>
-                {o.audio?.length
-                  ? `${t(locale, 'audio')}: ${o.audio.map((l) => languageNames[l as Locale] || l).join(', ')}`
-                  : t(locale, 'languageUnknown')}
-              </small>
+              {!!o.audio?.length && (
+                <small>
+                  {t(locale, 'audio')}:{' '}
+                  {o.audio
+                    .map((l) => languageNames[l as Locale] || l)
+                    .join(', ')}
+                </small>
+              )}
               {o.subtitles?.length ? (
                 <small>
                   {t(locale, 'subtitles')}:{' '}
@@ -220,7 +225,8 @@ export function OfferList({
       )}
       <p className="offer-disclaimer">
         <Info size={15} />
-        {t(locale, 'priceHelp')} {t(locale, 'external')}.
+        {t(locale, 'pictureHelp')} {t(locale, 'priceHelp')}{' '}
+        {t(locale, 'external')}.
       </p>
     </>
   );

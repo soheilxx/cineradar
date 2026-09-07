@@ -10,7 +10,7 @@ const envSchema = z.object({
   SAA_ACCESS_MODE: z.enum(['direct', 'rapidapi']).default('direct'),
   SAA_API_KEY: z.string().optional(),
   RAPIDAPI_KEY: z.string().optional(),
-  ENABLED_MARKETS: z.string().default('de,fr,it,es'),
+  ENABLED_MARKETS: z.string().default('de,fr,it,es,us'),
   SUPPORTED_LOCALES: z.literal('de,fr,it,es,en').default('de,fr,it,es,en'),
   SAA_DAILY_BUDGET: z.coerce.number().int().nonnegative().default(0),
   SAA_MONTHLY_BUDGET: z.coerce.number().int().nonnegative().default(0),

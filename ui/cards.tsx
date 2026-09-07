@@ -5,7 +5,13 @@ import { path } from '@/i18n/routes';
 import { SaveButton } from './save-button';
 import { ArrowUpRight, Film } from 'lucide-react';
 import { Artwork } from './artwork';
-export function titlePath(item: CatalogItem, locale: Locale, market: string) {
+import { catalogCard, type CardItem } from '@/domain/cards';
+export function titlePath(
+  item: CatalogItem | CardItem,
+  locale: Locale,
+  market: string,
+) {
+  if ('slug' in item) return path(locale, market, item.type, item.slug);
   return path(
     locale,
     market,
@@ -19,19 +25,14 @@ export function PosterCard({
   market,
   index = 0,
 }: {
-  item: CatalogItem;
+  item: CatalogItem | CardItem;
   locale: Locale;
   market: string;
   index?: number;
 }) {
-  const title = item.title.localizations[locale].title;
-  const providers = [
-    ...new Map(
-      item.snapshot.offers
-        .filter((o) => o.type === 'subscription' || o.type === 'free')
-        .map((o) => [o.provider.id, o.provider]),
-    ).values(),
-  ];
+  const card = 'slug' in item ? item : catalogCard(item, locale);
+  const title = card.title;
+  const providers = card.providers;
   return (
     <article
       className="poster-card"
@@ -43,9 +44,9 @@ export function PosterCard({
           aria-label={title}
           className="poster-link"
         >
-          {item.title.poster ? (
+          {card.poster ? (
             <Artwork
-              src={item.title.poster}
+              src={card.poster}
               alt={title}
               width="500"
               height="750"
@@ -62,17 +63,12 @@ export function PosterCard({
             <ArrowUpRight />
           </span>
         </a>
-        <SaveButton
-          id={item.title.id}
-          locale={locale}
-          market={market}
-          compact
-        />
-        {item.title.rating !== null && (
+        <SaveButton id={card.id} locale={locale} market={market} compact />
+        {card.rating !== null && (
           <span className="rating" title={t(locale, 'rating')}>
             ★{' '}
             {new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(
-              item.title.rating,
+              card.rating,
             )}
           </span>
         )}
@@ -81,11 +77,11 @@ export function PosterCard({
         <h3>{title}</h3>
       </a>
       <p className="card-meta">
-        {item.title.year} <span>·</span> {t(locale, item.title.type)}{' '}
-        {item.title.runtime && (
+        {card.year} <span>·</span> {t(locale, card.type)}{' '}
+        {card.runtime && (
           <>
             <span>·</span>
-            {t(locale, 'minutes', { count: item.title.runtime })}
+            {t(locale, 'minutes', { count: card.runtime })}
           </>
         )}
       </p>
@@ -96,7 +92,9 @@ export function PosterCard({
           <span>
             {t(
               locale,
-              item.snapshot.availability === 'empty' ? 'noOffers' : 'unchecked',
+              card.availability === 'empty' || card.availability === 'available'
+                ? 'noOffers'
+                : 'unchecked',
             )}
           </span>
         )}

@@ -13,6 +13,10 @@ export function middleware(request: NextRequest) {
   const csp = `default-src 'self'; script-src 'self' ${dev ? "'unsafe-inline' 'unsafe-eval'" : `'nonce-${nonce}' 'strict-dynamic'`}; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self'; connect-src 'self' ${dev ? 'ws: wss:' : ''}; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self';`;
   h.set('Content-Security-Policy', csp);
   const response = NextResponse.next({ request: { headers: h } });
+  if (/^\/(?:[a-z]{2}\/?)?$/.test(request.nextUrl.pathname)) {
+    response.headers.set('Cache-Control', 'private, no-store');
+    response.headers.set('Vary', 'Accept-Language, Cookie');
+  }
   response.headers.set('Content-Security-Policy', csp);
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');

@@ -268,13 +268,21 @@ export class SAA {
       showSchema,
     );
   }
-  catalog(market: string, type: MediaType, cursor?: string) {
+  catalog(
+    market: string,
+    type: MediaType,
+    cursor?: string,
+    order:
+      | 'popularity_1year'
+      | 'popularity_1week'
+      | 'release_date' = 'popularity_1year',
+  ) {
     return this.get(
       '/shows/search/filters',
       {
         country: market,
         show_type: type === 'tv' ? 'series' : 'movie',
-        order_by: 'popularity_1year',
+        order_by: order,
         order_direction: 'desc',
         output_language: 'en',
         series_granularity: 'episode',
