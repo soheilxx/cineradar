@@ -5,6 +5,7 @@ import { locales, type Locale, countryName } from '../i18n/config';
 import { path, type RouteKey } from '../i18n/routes';
 import { config } from '../lib/config';
 import { meaningfulTitle, streamingContent } from './content';
+import { infoDescriptions } from '../content/info';
 export function jsonLd(data: unknown) {
   return JSON.stringify(data)
     .replace(/</g, '\\u003c')
@@ -50,17 +51,19 @@ export function metadata(
     : `${label || t(locale, key as MessageKey)} · ${countryName(locale, market)} | Cineradar`;
   const description = name
     ? streamingContent(item, locale, market).description
-    : t(locale, 'catalogIntro', {
-        title: label || t(locale, key as MessageKey),
-        country: countryName(locale, market),
-      });
+    : key in infoDescriptions
+      ? infoDescriptions[key as keyof typeof infoDescriptions][locale]
+      : t(locale, 'catalogIntro', {
+          title: label || t(locale, key as MessageKey),
+          country: countryName(locale, market),
+        });
   const canonical = new URL(
     path(locale, market, key, item?.title.localizations[locale].slug || tail) +
       (page > 1 ? `?page=${page}` : ''),
     c.SITE_URL,
   ).href;
   const imageUrl = new URL(
-    `/api/og?locale=${locale}&market=${market}${item ? '&id=' + encodeURIComponent(item.title.id) : ''}&revision=${item?.title.revision || 'brand-1'}`,
+    `/api/og?locale=${locale}&market=${market}&page=${key}${tail ? '&tail=' + encodeURIComponent(tail) : ''}${item ? '&id=' + encodeURIComponent(item.title.id) : ''}&revision=${item?.title.revision || 'editorial-2'}`,
     c.SITE_URL,
   ).href;
   const landing =

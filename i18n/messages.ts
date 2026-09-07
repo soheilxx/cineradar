@@ -573,11 +573,11 @@ export const messages = {
     'Your message',
   ],
   email: [
-    'E-Mail für Rückfragen (optional)',
-    'E-mail pour une réponse (facultatif)',
-    'E-mail per rispondere (facoltativa)',
-    'Correo para responder (opcional)',
-    'Reply email (optional)',
+    'E-Mail für Rückfragen (Pflichtfeld)',
+    'E-mail pour une réponse (obligatoire)',
+    'E-mail per rispondere (obbligatoria)',
+    'Correo para responder (obligatorio)',
+    'Reply email (required)',
   ],
   send: [
     'Nachricht senden',
@@ -629,11 +629,11 @@ export const messages = {
     'The data controller is listed below. Vercel hosts the website; Neon hosts the application database in Frankfurt. These services process technical connection data, such as IP address, time and requested address, to deliver and secure the service and investigate errors. Providers operate internationally; processing outside Switzerland and the European Economic Area is possible. Provider information: vercel.com/legal/privacy-policy and neon.com/privacy-policy.',
   ],
   privacyContact: [
-    'Wenn du uns über das Formular kontaktierst, speichern wir deine Nachricht, eine gegebenenfalls angegebene E-Mail-Adresse, Sprache, Land und den betroffenen Titel zur Bearbeitung deiner Anfrage. Diese Meldungen werden nach spätestens 90 Tagen gelöscht. Merkliste und Anbieterwahl kannst du auf deinem Gerät löschen, indem du die Website-Daten im Browser entfernst. Der geschützte Betriebsbereich verwendet ein notwendiges Sitzungscookie mit höchstens acht Stunden Laufzeit.',
-    'Si vous utilisez le formulaire, nous enregistrons votre message, l’adresse e-mail éventuellement fournie, la langue, le pays et le titre concerné pour traiter votre demande. Ces messages sont supprimés au plus tard après 90 jours. Vous pouvez effacer la liste et les préférences en supprimant les données du site dans votre navigateur. L’espace de gestion protégé utilise un cookie de session nécessaire d’une durée maximale de huit heures.',
-    'Quando usi il modulo, conserviamo messaggio, eventuale indirizzo e-mail, lingua, paese e titolo interessato per gestire la richiesta. Questi messaggi vengono eliminati entro 90 giorni. Puoi cancellare lista e preferenze eliminando i dati del sito nel browser. L’area di gestione protetta usa un cookie di sessione necessario con durata massima di otto ore.',
-    'Al usar el formulario, guardamos tu mensaje, el correo electrónico opcional, el idioma, el país y el título afectado para atender la solicitud. Estos mensajes se eliminan en un máximo de 90 días. Puedes borrar la lista y las preferencias eliminando los datos del sitio en el navegador. El área de gestión protegida usa una cookie de sesión necesaria de hasta ocho horas.',
-    'When you use the form, we store your message, optional email address, language, country and affected title to handle your request. These reports are deleted within 90 days. You can remove your watchlist and provider preferences by clearing this website’s data in your browser. The protected operations area uses a necessary session cookie lasting no more than eight hours.',
+    'Wenn du uns über das Formular kontaktierst, speichern wir deinen Namen, Betreff, deine Nachricht und deine E-Mail-Adresse, Sprache, Land und den betroffenen Titel zur Bearbeitung deiner Anfrage. Diese Meldungen werden nach spätestens 90 Tagen gelöscht. Merkliste und Anbieterwahl kannst du auf deinem Gerät löschen, indem du die Website-Daten im Browser entfernst. Der geschützte Betriebsbereich verwendet ein notwendiges Sitzungscookie mit höchstens acht Stunden Laufzeit.',
+    'Si vous utilisez le formulaire, nous enregistrons votre nom, l’objet, votre message et votre adresse e-mail, la langue, le pays et le titre concerné pour traiter votre demande. Ces messages sont supprimés au plus tard après 90 jours. Vous pouvez effacer la liste et les préférences en supprimant les données du site dans votre navigateur. L’espace de gestion protégé utilise un cookie de session nécessaire d’une durée maximale de huit heures.',
+    'Quando usi il modulo, conserviamo nome, oggetto, messaggio e indirizzo e-mail, lingua, paese e titolo interessato per gestire la richiesta. Questi messaggi vengono eliminati entro 90 giorni. Puoi cancellare lista e preferenze eliminando i dati del sito nel browser. L’area di gestione protetta usa un cookie di sessione necessario con durata massima di otto ore.',
+    'Al usar el formulario, guardamos tu nombre, asunto, mensaje y correo electrónico, el idioma, el país y el título afectado para atender la solicitud. Estos mensajes se eliminan en un máximo de 90 días. Puedes borrar la lista y las preferencias eliminando los datos del sitio en el navegador. El área de gestión protegida usa una cookie de sesión necesaria de hasta ocho horas.',
+    'When you use the form, we store your name, subject, message and email address, language, country and affected title to handle your request. These reports are deleted within 90 days. You can remove your watchlist and provider preferences by clearing this website’s data in your browser. The protected operations area uses a necessary session cookie lasting no more than eight hours.',
   ],
   privacyRights: [
     'Für Auskunft, Berichtigung oder Löschung deiner personenbezogenen Daten sowie weitere Anliegen zum Datenschutz wende dich an die unten genannte Kontaktadresse. Soweit anwendbar, stehen dir außerdem Rechte auf Einschränkung, Widerspruch und Datenübertragbarkeit sowie eine Beschwerde bei der zuständigen Datenschutzaufsicht zu.',

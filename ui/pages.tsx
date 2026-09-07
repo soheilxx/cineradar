@@ -1,3 +1,4 @@
+import { infoDescriptions, infoHeadings } from '@/content/info';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -19,7 +20,7 @@ import { ProviderSelection } from './provider-selection';
 import { FilterControls } from './filters';
 import { SaveButton } from './save-button';
 import { OfferList } from './offer-list';
-import { ContactForm } from './contact';
+import { ContactPage } from './contact-page';
 import { config } from '@/lib/config';
 import {
   Pagination,
@@ -765,63 +766,130 @@ export function InfoPage({
     contact: [],
     report: [],
   };
+  if (route === 'contact' || route === 'report')
+    return (
+      <ContactPage
+        locale={locale}
+        market={market}
+        titleId={titleId}
+        report={route === 'report'}
+      />
+    );
   return (
     <>
-      <PageHeading locale={locale} title={t(locale, route as MessageKey)} />
-      <div className="prose">
-        {(paragraphs[route] || []).map((k) => (
-          <p key={k}>{t(locale, k)}</p>
-        ))}
-        {['legal', 'privacy'].includes(route) && c.OPERATOR_NAME && (
-          <address>
-            {c.OPERATOR_NAME}
-            <br />
-            {c.OPERATOR_ADDRESS}
-            <br />
-            <a href={'mailto:' + c.CONTACT_EMAIL}>{c.CONTACT_EMAIL}</a>
-          </address>
-        )}
-        {['legal', 'privacy'].includes(route) &&
-          c.LEGAL_APPROVED !== 'true' && (
-            <p className="notice">{t(locale, 'legalPending')}</p>
-          )}
-        {route === 'credits' && (
-          <>
-            <a href="https://www.themoviedb.org/">
-              <img
-                className="tmdb-logo"
-                src="https://www.themoviedb.org/assets/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg"
-                width="150"
-                height="50"
-                alt="TMDb"
-              />
-            </a>
-            <p lang="en">
-              This product uses the TMDB API but is not endorsed or certified by
-              TMDB.
-            </p>
-            <a
-              className="text-link"
-              href="https://www.movieofthenight.com/about/api"
-            >
-              Streaming Availability API by Movie of the Night{' '}
-              <ArrowUpRight size={18} />
-            </a>
-          </>
-        )}
-        {['contact', 'report'].includes(route) && (
-          <>
-            <ContactForm
-              {...{ locale, market, titleId }}
-              enabled={!!c.DATABASE_URL}
-            />
-            {c.CONTACT_EMAIL && (
-              <a className="text-link" href={'mailto:' + c.CONTACT_EMAIL}>
-                {c.CONTACT_EMAIL}
+      <div className="info-page-head">
+        <p className="eyebrow">Cineradar</p>
+        <h1>{t(locale, route as MessageKey)}</h1>
+        <p className="editorial-lead">
+          {route in infoDescriptions
+            ? infoDescriptions[route as keyof typeof infoDescriptions][locale]
+            : ''}
+        </p>
+      </div>
+      <div className="info-page-layout">
+        <aside className="info-page-aside">
+          <nav>
+            {(paragraphs[route] || []).map((k) => (
+              <a key={k} href={'#' + k}>
+                {infoHeadings[k as keyof typeof infoHeadings]?.[locale] ||
+                  t(locale, route as MessageKey)}
               </a>
+            ))}
+          </nav>
+          <nav>
+            {(['about', 'help', 'data', 'contact', 'legal', 'privacy'] as const)
+              .filter((k) => k !== route)
+              .map((k) => (
+                <a key={k} href={path(locale, market, k)}>
+                  {t(locale, k)}
+                </a>
+              ))}
+          </nav>
+        </aside>
+        <div className="info-page-body">
+          {(paragraphs[route] || []).map((k) => (
+            <section className="info-section" id={k} key={k}>
+              <h2>
+                {infoHeadings[k as keyof typeof infoHeadings]?.[locale] ||
+                  t(locale, route as MessageKey)}
+              </h2>
+              <p>{t(locale, k)}</p>
+            </section>
+          ))}
+          {['legal', 'privacy'].includes(route) && c.OPERATOR_NAME && (
+            <address className="operator-address">
+              {c.OPERATOR_NAME}
+              <br />
+              {c.OPERATOR_ADDRESS}
+              <br />
+              <a href={'mailto:' + c.CONTACT_EMAIL}>{c.CONTACT_EMAIL}</a>
+            </address>
+          )}
+          {route === 'legal' && c.OPERATOR_NAME === 'Wiresoft AG' && (
+            <div className="legal-register">
+              <dl>
+                <div>
+                  <dt>UID</dt>
+                  <dd>CHE-112.097.691</dd>
+                </div>
+                <div>
+                  <dt>
+                    {locale === 'de'
+                      ? 'Handelsregister'
+                      : locale === 'fr'
+                        ? 'Registre du commerce'
+                        : locale === 'it'
+                          ? 'Registro di commercio'
+                          : locale === 'es'
+                            ? 'Registro mercantil'
+                            : 'Commercial register'}
+                  </dt>
+                  <dd>CH-170.3.027.782-3</dd>
+                </div>
+              </dl>
+              <a
+                href="https://www.uid.admin.ch/Detail.aspx?uid_id=CHE112097691"
+                className="text-link"
+              >
+                {locale === 'de'
+                  ? 'Eintrag im Schweizer UID-Register'
+                  : locale === 'fr'
+                    ? 'Registre IDE suisse'
+                    : locale === 'it'
+                      ? 'Registro IDI svizzero'
+                      : locale === 'es'
+                        ? 'Registro UID suizo'
+                        : 'Swiss UID register'}{' '}
+                <ArrowUpRight size={16} />
+              </a>
+            </div>
+          )}
+          {['legal', 'privacy'].includes(route) &&
+            c.LEGAL_APPROVED !== 'true' && (
+              <p className="notice">{t(locale, 'legalPending')}</p>
             )}
-          </>
-        )}
+          {route === 'credits' && (
+            <>
+              <a href="https://www.themoviedb.org/">
+                <img
+                  className="tmdb-logo"
+                  src="https://www.themoviedb.org/assets/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg"
+                  width="150"
+                  height="50"
+                  alt="TMDb"
+                />
+              </a>
+              <p lang="en">
+                This product uses the TMDB API but is not endorsed or certified
+                by TMDB.
+              </p>
+              <a className="text-link" href="https://docs.movieofthenight.com/">
+                Streaming Availability API by Movie of the Night{' '}
+                <ArrowUpRight size={18} />
+              </a>
+            </>
+          )}
+        </div>
       </div>
     </>
   );

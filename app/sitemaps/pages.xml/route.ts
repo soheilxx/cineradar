@@ -2,16 +2,32 @@ import { config } from '@/lib/config';
 import { db } from '@/data/db';
 import { locales } from '@/i18n/config';
 import { path } from '@/i18n/routes';
+import { comparisons } from '@/content/comparisons';
+import { comparisonPath } from '@/content/comparisons/routes';
 export const dynamic = 'force-dynamic';
 export async function GET() {
   const c = config();
   const paths: string[] = [];
+  let editorial = '';
   if (
     c.DEPLOYMENT_ENV === 'production' &&
     c.APP_MODE === 'live' &&
     c.LEGAL_APPROVED === 'true' &&
     c.LICENSES_CONFIRMED === 'true'
   ) {
+    editorial = locales
+      .flatMap((locale) => [
+        { path: comparisonPath(locale), date: '2026-09-07' },
+        ...comparisons.map((item) => ({
+          path: comparisonPath(locale, item.id),
+          date: item.updatedAt,
+        })),
+      ])
+      .map(
+        (item) =>
+          `<url><loc>${new URL(item.path, c.SITE_URL).href}</loc><lastmod>${item.date}</lastmod></url>`,
+      )
+      .join('');
     const providers = (
       await (
         await db()
@@ -32,7 +48,7 @@ export async function GET() {
       }
   }
   return new Response(
-    `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths.map((p) => `<url><loc>${new URL(p, c.SITE_URL).href.replace(/&/g, '&amp;')}</loc></url>`).join('')}</urlset>`,
+    `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${editorial}${paths.map((p) => `<url><loc>${new URL(p, c.SITE_URL).href.replace(/&/g, '&amp;')}</loc></url>`).join('')}</urlset>`,
     {
       headers: {
         'Content-Type': 'application/xml',

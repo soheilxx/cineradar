@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { t } from '@/i18n/messages';
 import type { Locale } from '@/i18n/config';
+import { contactCopy as copy } from '@/content/contact';
+import { path } from '@/i18n/routes';
 export function ContactForm({
   locale,
   market,
@@ -32,8 +34,10 @@ export function ContactForm({
               locale,
               market,
               titleId,
+              name: data.get('name'),
+              subject: data.get('subject'),
               message: data.get('message'),
-              email: data.get('email') || undefined,
+              email: data.get('email'),
               website: data.get('website'),
             }),
           });
@@ -45,25 +49,60 @@ export function ContactForm({
         }
       }}
     >
+      <div className="contact-form-heading">
+        <h2>{copy.formTitle[locale]}</h2>
+        <p>{copy.required[locale]}</p>
+      </div>
+      <div className="contact-fields">
+        <label>
+          {copy.name[locale]} *
+          <input
+            name="name"
+            autoComplete="name"
+            required
+            minLength={2}
+            maxLength={120}
+          />
+        </label>
+        <label>
+          {copy.email[locale]} *
+          <input
+            name="email"
+            type="email"
+            maxLength={254}
+            required
+            autoComplete="email"
+            inputMode="email"
+          />
+        </label>
+      </div>
       <label>
-        {t(locale, 'message')}
+        {copy.subject[locale]} *
+        <input name="subject" required minLength={3} maxLength={160} />
+      </label>
+      <label>
+        {t(locale, 'message')} *
         <textarea
           name="message"
           minLength={10}
           maxLength={3000}
           required
           rows={6}
+          aria-describedby="message-help"
         />
       </label>
-      <label>
-        {t(locale, 'email')}
-        <input name="email" type="email" maxLength={254} />
-      </label>
+      <p className="contact-field-help" id="message-help">
+        {copy.details[locale]}
+      </p>
       <label className="honeypot" aria-hidden="true">
         Website
         <input name="website" tabIndex={-1} autoComplete="off" />
       </label>
       {!enabled && <p>{t(locale, 'unavailableContact')}</p>}
+      <p className="contact-privacy">
+        {copy.privacy[locale]}{' '}
+        <a href={path(locale, market, 'privacy')}>{t(locale, 'privacy')}</a>.
+      </p>
       <button
         className="button primary"
         disabled={!enabled || status === 'sending'}
@@ -72,7 +111,7 @@ export function ContactForm({
       </button>
       <p role="status">
         {status === 'sent'
-          ? t(locale, 'sent')
+          ? copy.stored[locale]
           : status === 'error'
             ? t(locale, 'sendError')
             : ''}

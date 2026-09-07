@@ -23,16 +23,28 @@ export function Search({
   locale,
   market,
   initial = '',
+  inputId,
+  buttonLabel,
+  onSearch,
 }: {
   locale: Locale;
   market: string;
   initial?: string;
+  inputId?: string;
+  buttonLabel?: string;
+  onSearch?: () => void;
 }) {
   const [query, setQuery] = useState(initial);
   const [items, setItems] = useState<Suggestion[]>([]);
   const [busy, setBusy] = useState(false);
   const seq = useRef(0);
   const ready = useHydrated();
+  function submitSearch() {
+    onSearch?.();
+    window.location.assign(
+      path(locale, market, 'search') + '?q=' + encodeURIComponent(query),
+    );
+  }
   useEffect(() => {
     const n = ++seq.current;
     const controller = new AbortController();
@@ -67,9 +79,7 @@ export function Search({
       method="get"
       onSubmit={(e) => {
         e.preventDefault();
-        window.location.assign(
-          path(locale, market, 'search') + '?q=' + encodeURIComponent(query),
-        );
+        submitSearch();
       }}
     >
       <SearchIcon className="search-symbol" size={23} />
@@ -87,12 +97,16 @@ export function Search({
         }}
         itemToStringLabel={(x) => x.label}
         onValueChange={(value) => {
-          if (value) window.location.assign(value.href);
+          if (value) {
+            onSearch?.();
+            window.location.assign(value.href);
+          }
         }}
       >
         <ComboboxInput
           disabled={!ready}
           name="q"
+          id={inputId}
           maxLength={120}
           aria-label={t(locale, 'searchHint')}
           placeholder={t(locale, 'searchHint')}
@@ -106,23 +120,21 @@ export function Search({
               )
             ) {
               e.preventDefault();
-              window.location.assign(
-                path(locale, market, 'search') +
-                  '?q=' +
-                  encodeURIComponent(query),
-              );
+              submitSearch();
             }
           }}
         >
-          <button
-            disabled={!ready}
-            type="submit"
-            className="search-submit"
-            aria-label={t(locale, 'search')}
-          >
-            <span>{t(locale, 'search')}</span>
-            <ArrowRight size={20} />
-          </button>
+          {!buttonLabel && (
+            <button
+              disabled={!ready}
+              type="submit"
+              className="search-submit"
+              aria-label={buttonLabel || t(locale, 'search')}
+            >
+              <span>{buttonLabel || t(locale, 'search')}</span>
+              <ArrowRight size={20} />
+            </button>
+          )}
         </ComboboxInput>
         <ComboboxContent>
           <ComboboxList>
@@ -139,21 +151,21 @@ export function Search({
               </ComboboxItem>
             )}
           </ComboboxList>
-          <button
-            type="button"
-            className="search-all"
-            onClick={() =>
-              window.location.assign(
-                path(locale, market, 'search') +
-                  '?q=' +
-                  encodeURIComponent(query),
-              )
-            }
-          >
+          <button type="button" className="search-all" onClick={submitSearch}>
             {t(locale, 'search')} <ArrowRight size={16} />
           </button>
         </ComboboxContent>
       </Combobox>
+      {buttonLabel && (
+        <button
+          type="submit"
+          className="button primary comparison-search-submit"
+          disabled={!ready}
+        >
+          {buttonLabel}
+          <ArrowRight size={18} />
+        </button>
+      )}
       <span className="sr-only" role="status">
         {busy ? t(locale, 'loading') : ''}
       </span>

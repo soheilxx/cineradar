@@ -1,4 +1,7 @@
 import { notFound, permanentRedirect } from 'next/navigation';
+import { comparisonRoute } from '@/content/comparisons/routes';
+import { ComparisonPage } from '@/ui/comparison-page';
+import { comparisonMetadata } from '@/seo/comparisons';
 import { filterSchema } from '@/lib/catalog-filters';
 import { isLocale, locales } from '@/i18n/config';
 import { path, routeFor } from '@/i18n/routes';
@@ -51,6 +54,10 @@ async function resolve(params: Props['params']) {
   return { locale: p.locale, market: p.market, route, tail, item };
 }
 export async function generateMetadata({ params, searchParams }: Props) {
+  const p = await params;
+  const editorial =
+    !p.segments?.length && comparisonRoute(`/${p.locale}/${p.market}`);
+  if (editorial) return comparisonMetadata(editorial.locale, editorial.id);
   const r = await resolve(params);
   const search = await searchParams;
   const label =
@@ -71,6 +78,10 @@ export async function generateMetadata({ params, searchParams }: Props) {
   );
 }
 export default async function Page({ params, searchParams }: Props) {
+  const p = await params;
+  const editorial =
+    !p.segments?.length && comparisonRoute(`/${p.locale}/${p.market}`);
+  if (editorial) return <ComparisonPage {...editorial} />;
   const { locale, market, route, tail, item } = await resolve(params);
   const raw = await searchParams;
   const filtered = filterSchema.safeParse(

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import './globals.css';
 import './experience.css';
+import './editorial.css';
 export const metadata: Metadata = {
   icons: { icon: '/icon.svg', apple: '/apple-touch-icon.png' },
   title: 'Cineradar · Find your next movie night',

@@ -68,10 +68,12 @@ export async function OperationsPage({
         id: number;
         message: string;
         email: string | null;
+        name: string | null;
+        subject: string | null;
         resolved: boolean;
         created_at: string;
       }>(
-        'SELECT id,message,email,resolved,created_at FROM reports ORDER BY id DESC LIMIT 30',
+        'SELECT id,message,email,name,subject,resolved,created_at FROM reports ORDER BY id DESC LIMIT 30',
       ),
       d.query<{ id: number; scope: string; reason: string; at: string }>(
         'SELECT id,scope,reason,at FROM quarantines ORDER BY id DESC LIMIT 10',
@@ -196,6 +198,8 @@ export async function OperationsPage({
         <h2>{t(locale, 'reports')}</h2>
         {reports.rows.map((r) => (
           <article className="panel" key={r.id}>
+            {r.subject && <h3>{r.subject}</h3>}
+            {r.name && <p>{r.name}</p>}
             <p>{r.message}</p>
             {r.email && <p>{r.email}</p>}
             {!r.resolved && action('resolve', r.id)}

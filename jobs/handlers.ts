@@ -328,7 +328,10 @@ export async function handle(job: Job) {
     // One source page per leased job keeps large change windows bounded on
     // serverless. A watermark advances only after the final page is durable.
     if (result.hasMore) {
-      const rootKey = String(job.payload.rootKey || job.key);
+      const rootKey =
+        typeof job.payload.rootKey === 'string' && job.payload.rootKey
+          ? job.payload.rootKey
+          : job.key;
       await enqueue(`${rootKey}:page:${page + 1}`, 'changes', {
         market,
         changeType: kind,

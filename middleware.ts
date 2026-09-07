@@ -1,10 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { comparisonRoute, comparisonPath } from './content/comparisons/routes';
 export function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const editorial = comparisonRoute(pathname);
+  const normalized = editorial
+    ? comparisonPath(editorial.locale, editorial.id)
+    : !pathname.endsWith('/') &&
+        !/^\/(api|_next)(\/|$)/.test(pathname) &&
+        !/\.[^/]+$/.test(pathname)
+      ? pathname + '/'
+      : pathname;
+  if (normalized !== pathname) {
+    const url = new URL(request.url);
+    url.pathname = normalized;
+    return NextResponse.redirect(url, 308);
+  }
   const p = request.nextUrl.pathname.split('/');
   const h = new Headers(request.headers);
   h.set(
     'x-cineradar-locale',
-    ['de', 'fr', 'it', 'es', 'en'].includes(p[1]) ? p[1] : 'en',
+    editorial?.locale ||
+      (['de', 'fr', 'it', 'es', 'en'].includes(p[1]) ? p[1] : 'en'),
   );
   h.set('x-cineradar-market', /^[a-z]{2}$/.test(p[2] || '') ? p[2] : 'de');
   const nonce = btoa(crypto.randomUUID());

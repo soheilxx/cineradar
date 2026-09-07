@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Bookmark, Menu, X, Globe2 } from 'lucide-react';
+import { Bookmark, Menu, X, Globe2, Search, ArrowUpRight } from 'lucide-react';
 import { Brand } from './brand';
 import { Choice } from './select';
 import {
@@ -11,6 +11,8 @@ import {
 } from '@/i18n/config';
 import { path, type RouteKey } from '@/i18n/routes';
 import { t } from '@/i18n/messages';
+import { comparisonPath } from '@/content/comparisons/routes';
+import { copy } from '@/content/comparisons/copy';
 import {
   Dialog,
   DialogContent,
@@ -28,7 +30,7 @@ export function Header({
 }: {
   locale: Locale;
   market: string;
-  route?: RouteKey;
+  route?: RouteKey | 'comparison';
   languageLinks: Record<string, string>;
   countryLinks: Record<string, string>;
   markets: string[];
@@ -44,6 +46,48 @@ export function Header({
     } catch {}
     window.location.assign(url + window.location.search);
   }
+  const menuLabel = {
+    de: 'Menü',
+    fr: 'Menu',
+    it: 'Menu',
+    es: 'Menú',
+    en: 'Menu',
+  }[locale];
+  const settings = () => (
+    <>
+      <Choice
+        label={t(locale, 'market')}
+        value={market}
+        options={markets.map((value) => ({
+          value,
+          label: countryName(locale, value),
+        }))}
+        onChange={(v) =>
+          navigate(countryLinks[v] || path(locale, v), locale, v)
+        }
+      />
+      <Choice
+        label={t(locale, 'language')}
+        value={locale}
+        options={locales.map((value) => ({
+          value,
+          label: languageNames[value],
+        }))}
+        onChange={(v) => {
+          const nextMarket =
+            v === 'en' && markets.includes('us') ? 'us' : market;
+          navigate(
+            languageLinks[v].replace(
+              /^\/[a-z]{2}\/[a-z]{2}\//,
+              `/${v}/${nextMarket}/`,
+            ),
+            v,
+            nextMarket,
+          );
+        }}
+      />
+    </>
+  );
   const nav = (['home', 'movies', 'series', 'providers'] as const).map(
     (key) => (
       <a
@@ -65,40 +109,8 @@ export function Header({
           <Brand href={path(locale, market)} />
           <nav className="desktop-nav">{nav}</nav>
           <div className="header-controls">
-            <div className="market-control">
-              <Globe2 size={16} />
-              <Choice
-                label={t(locale, 'market')}
-                value={market}
-                options={markets.map((value) => ({
-                  value,
-                  label: countryName(locale, value),
-                }))}
-                onChange={(v) =>
-                  navigate(countryLinks[v] || path(locale, v), locale, v)
-                }
-              />
-            </div>
-            <Choice
-              label={t(locale, 'language')}
-              value={locale}
-              options={locales.map((value) => ({
-                value,
-                label: languageNames[value],
-              }))}
-              onChange={(v) => {
-                const nextMarket =
-                  v === 'en' && markets.includes('us') ? 'us' : market;
-                navigate(
-                  languageLinks[v].replace(
-                    /^\/[a-z]{2}\/[a-z]{2}\//,
-                    `/${v}/${nextMarket}/`,
-                  ),
-                  v,
-                  nextMarket,
-                );
-              }}
-            />
+            <Globe2 size={16} />
+            {settings()}
             <a
               className="nav-watch"
               aria-label={t(locale, 'watchlist')}
@@ -107,33 +119,68 @@ export function Header({
               <Bookmark size={20} />
               <span>{t(locale, 'watchlist')}</span>
             </a>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger
-                className="mobile-menu button"
-                aria-label={t(locale, 'home')}
+          </div>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <div className="mobile-header-actions">
+              <a
+                className="mobile-icon"
+                href={path(locale, market, 'search')}
+                aria-label={t(locale, 'search')}
               >
-                <Menu size={21} />
+                <Search size={21} />
+              </a>
+              <DialogTrigger
+                className="mobile-nav-trigger"
+                aria-label={menuLabel}
+              >
+                <span>
+                  {market.toUpperCase()} · {locale.toUpperCase()}
+                </span>
+                <Menu size={22} />
               </DialogTrigger>
-              <DialogContent showCloseButton={false} className="menu-dialog">
-                <DialogTitle>{t(locale, 'home')}</DialogTitle>
+            </div>
+            <DialogContent
+              showCloseButton={false}
+              className="mobile-nav-panel"
+              style={{ translate: 'none', transform: 'none' }}
+            >
+              <div className="mobile-nav-top">
+                <DialogTitle>{menuLabel}</DialogTitle>
                 <DialogClose
-                  className="dialog-close"
+                  className="mobile-icon"
                   aria-label={t(locale, 'close')}
                 >
-                  <X />
+                  <X size={24} />
                 </DialogClose>
-                <nav>
-                  {nav}
-                  <a href={path(locale, market, 'finder')}>
-                    {t(locale, 'finder')}
+              </div>
+              <nav className="mobile-primary-nav" aria-label={menuLabel}>
+                {nav}
+                {(['finder', 'watchlist'] as const).map((k) => (
+                  <a
+                    key={k}
+                    href={path(locale, market, k)}
+                    aria-current={route === k ? 'page' : undefined}
+                  >
+                    {t(locale, k)}
+                    <ArrowUpRight size={19} />
                   </a>
-                  <a href={path(locale, market, 'watchlist')}>
-                    {t(locale, 'watchlist')}
+                ))}
+              </nav>
+              <div className="mobile-context">
+                <Globe2 size={20} />
+                <div className="mobile-context-choices">{settings()}</div>
+              </div>
+              <nav className="mobile-support-nav">
+                <a href={comparisonPath(locale)}>{copy.hub[locale]}</a>
+                {(['help', 'contact', 'about'] as const).map((k) => (
+                  <a key={k} href={path(locale, market, k)}>
+                    {t(locale, k)}
                   </a>
-                </nav>
-              </DialogContent>
-            </Dialog>
-          </div>
+                ))}
+              </nav>
+              <Brand href={path(locale, market)} />
+            </DialogContent>
+          </Dialog>
         </div>
       </header>
     </>
