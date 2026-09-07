@@ -29,15 +29,17 @@ export async function schedule(now = new Date(), injected?: Database) {
       }
   for (const market of c.markets)
     for (const changeType of ['new', 'updated', 'removed'])
-      jobs.push({
-        key: `changes:${market}:${changeType}:${window}`,
-        kind: 'changes',
-        payload: {
-          market,
-          changeType,
-          to: Math.floor(now.getTime() / 1000),
-        },
-      });
+      for (const itemType of ['show', 'season', 'episode'])
+        jobs.push({
+          key: `changes:${market}:${changeType}:${itemType}:${window}`,
+          kind: 'changes',
+          payload: {
+            market,
+            changeType,
+            itemType,
+            to: Math.floor(now.getTime() / 1000),
+          },
+        });
   await database.query(
     `INSERT INTO jobs(key,kind,payload)
     SELECT key,kind,payload FROM jsonb_to_recordset($1::jsonb) AS planned(key text,kind text,payload jsonb)

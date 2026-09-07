@@ -12,7 +12,6 @@ import { ProviderError } from '../data/providers/http';
 import type { Title, MediaType } from '../domain/types';
 import { getTitle } from '../data/repositories/catalog';
 import { translateMissing } from '../data/providers/translation';
-import { paginate } from './pagination';
 export function importMarkets(
   job: Pick<Job, 'kind' | 'payload'>,
   enabled: string[],
@@ -238,6 +237,9 @@ export async function handle(job: Job) {
       }
     } catch (e) {
       const code = e instanceof ProviderError ? e.code : 'upstream';
+      // A local budget pause made no provider request. Preserve the last
+      // checked snapshot while the worker defers this job.
+      if (code === 'budget') throw e;
       for (const market of markets) {
         await database.query(
           'INSERT INTO markets(code) VALUES($1) ON CONFLICT DO NOTHING',
@@ -255,7 +257,17 @@ export async function handle(job: Job) {
   if (job.kind === 'changes') {
     const market = String(job.payload.market),
       kind = job.payload.changeType as 'new' | 'updated' | 'removed';
-    const scope = market + ':' + kind;
+    const itemType = (job.payload.itemType || 'show') as
+      | 'show'
+      | 'season'
+      | 'episode';
+    if (
+      !c.markets.includes(market) ||
+      !['new', 'updated', 'removed'].includes(kind) ||
+      !['show', 'season', 'episode'].includes(itemType)
+    )
+      throw new ProviderError('schema');
+    const scope = market + ':' + kind + ':' + itemType;
     const end = Number(job.payload.to);
     const existing = (
       await database.query<{ timestamp: string }>(
@@ -263,28 +275,76 @@ export async function handle(job: Job) {
         [scope],
       )
     ).rows[0];
-    const start =
-      Number(job.payload.from || existing?.timestamp || end - 21600) - 300;
-    await paginate(
-      async (cursor) => {
-        const result = await saa.changes(market, start, end, kind, cursor);
-        return { ...result, items: Object.values(result.shows) };
-      },
-      async (show) => {
-        const type = show.showType === 'series' ? 'tv' : 'movie';
-        await enqueue(
-          `reconcile:${type}:${show.tmdbId.split('/').at(-1)}:${Math.floor(end / 21600)}`,
-          'reconcile',
-          { type, id: Number(show.tmdbId.split('/').at(-1)) },
-        );
-      },
-      async () => {
-        await database.query(
-          'INSERT INTO watermarks(scope,timestamp) VALUES($1,$2) ON CONFLICT(scope) DO UPDATE SET timestamp=GREATEST(watermarks.timestamp,EXCLUDED.timestamp)',
-          [scope, end],
-        );
-      },
+    const start = Math.max(
+      end - 30 * 86400,
+      job.payload.from !== undefined
+        ? Number(job.payload.from)
+        : Number(existing?.timestamp || end - 21600) - 300,
     );
+    const cursor =
+      typeof job.payload.cursor === 'string' ? job.payload.cursor : undefined;
+    const seen = Array.isArray(job.payload.seen)
+      ? job.payload.seen.map(String)
+      : [];
+    const page = Number(job.payload.page || 1);
+    if (
+      !Number.isSafeInteger(end) ||
+      !Number.isSafeInteger(start) ||
+      start > end ||
+      !Number.isSafeInteger(page) ||
+      page < 1 ||
+      page > 1000
+    )
+      throw new ProviderError('schema');
+    const result = await saa.changes(
+      market,
+      start,
+      end,
+      kind,
+      cursor,
+      itemType,
+    );
+    if (
+      result.hasMore &&
+      (!result.nextCursor ||
+        result.nextCursor === cursor ||
+        seen.includes(result.nextCursor) ||
+        page === 1000)
+    )
+      throw new ProviderError('schema');
+    const jobs = Object.values(result.shows).map((show) => {
+      const type = show.showType === 'series' ? 'tv' : 'movie';
+      const id = Number(show.tmdbId.split('/').at(-1));
+      return {
+        key: `reconcile:${type}:${id}:${Math.floor(end / 21600)}`,
+        kind: 'reconcile',
+        payload: { type, id },
+      };
+    });
+    await database.query(
+      `INSERT INTO jobs(key,kind,payload) SELECT key,kind,payload FROM jsonb_to_recordset($1::jsonb) AS changes(key text,kind text,payload jsonb) ON CONFLICT(key) DO NOTHING`,
+      [JSON.stringify(jobs)],
+    );
+    // One source page per leased job keeps large change windows bounded on
+    // serverless. A watermark advances only after the final page is durable.
+    if (result.hasMore) {
+      const rootKey = String(job.payload.rootKey || job.key);
+      await enqueue(`${rootKey}:page:${page + 1}`, 'changes', {
+        market,
+        changeType: kind,
+        itemType,
+        from: start,
+        to: end,
+        cursor: result.nextCursor,
+        seen: [...seen, ...(cursor ? [cursor] : [])],
+        page: page + 1,
+        rootKey,
+      });
+    } else
+      await database.query(
+        'INSERT INTO watermarks(scope,timestamp) VALUES($1,$2) ON CONFLICT(scope) DO UPDATE SET timestamp=GREATEST(watermarks.timestamp,EXCLUDED.timestamp)',
+        [scope, end],
+      );
     return;
   }
   if (job.kind === 'maintenance') {

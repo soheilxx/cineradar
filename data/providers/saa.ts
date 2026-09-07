@@ -297,12 +297,14 @@ export class SAA {
     to: number,
     changeType: 'new' | 'updated' | 'removed',
     cursor?: string,
+    itemType: 'show' | 'season' | 'episode' = 'show',
   ) {
     return this.get(
       '/changes',
       {
         country: market,
         change_type: changeType,
+        item_type: itemType,
         from: String(from),
         to: String(to),
         ...(cursor ? { cursor } : {}),

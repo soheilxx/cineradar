@@ -42,6 +42,32 @@ const raw = (type = 'movie', offers: unknown[] = [offer]) => ({
   tmdbId: '1',
   streamingOptions: { de: offers },
 });
+
+test('Change requests include required item type and preserve cursor/time window', async () => {
+  const original = globalThis.fetch;
+  const calls: URL[] = [];
+  try {
+    globalThis.fetch = async (input) => {
+      calls.push(new URL(input instanceof Request ? input.url : input));
+      return Response.json({ changes: [], shows: {}, hasMore: false });
+    };
+    const api = new SAA(async () => true);
+    for (const type of ['show', 'season', 'episode'] as const)
+      await api.changes('us', 100, 200, 'updated', 'opaque-token', type);
+    assert.deepEqual(
+      calls.map((u) => u.searchParams.get('item_type')),
+      ['show', 'season', 'episode'],
+    );
+    for (const u of calls) {
+      assert.equal(u.searchParams.get('from'), '100');
+      assert.equal(u.searchParams.get('to'), '200');
+      assert.equal(u.searchParams.get('cursor'), 'opaque-token');
+      assert.equal(u.searchParams.get('country'), 'us');
+    }
+  } finally {
+    globalThis.fetch = original;
+  }
+});
 test('Catalog discovery preserves country, episode scope and opaque pagination cursor', async () => {
   const original = globalThis.fetch;
   const calls: URL[] = [];
