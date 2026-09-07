@@ -4,7 +4,7 @@ Mehrsprachige Plattform zum Finden und Vergleichen legaler Streamingangebote. De
 
 ## Stand
 
-Die lokale Anwendung und ihre Quellenadapter sind implementiert. Die lokale Vorschau verwendet ausdrücklich gekennzeichnete Testangebote. Eine echte Datenbank, API-Zugänge, Tarif-/Lizenzbestätigung und Betreiberangaben fehlen; deshalb läuft kein produktiver Import. Eine private Sites-Veröffentlichung verwendet `APP_MODE=unconfigured` und zeigt keine Testangebote. Die genaue Abnahme steht in [docs/acceptance.md](docs/acceptance.md).
+Die lokale Anwendung und ihre Quellenadapter sind implementiert. Die lokale Vorschau verwendet ausdrücklich gekennzeichnete Testangebote. Die lokal hinterlegten TMDb- und Movie-of-the-Night-Zugänge wurden am 7. September 2026 mit jeweils einer authentifizierten Anfrage erfolgreich geprüft. Eine echte Datenbank, Worker-Betrieb, Tarif-/Lizenzbestätigung und Betreiberangaben stehen noch aus; deshalb läuft kein produktiver Import. Eine private Sites-Veröffentlichung verwendet `APP_MODE=unconfigured` und zeigt keine Testangebote. Die genaue Abnahme steht in [docs/acceptance.md](docs/acceptance.md).
 
 ## Lokal starten
 
@@ -30,6 +30,14 @@ npm run dev:node
 `docker compose up --build -d` startet PostgreSQL, einmalige Migration, Web und Worker. `.env` muss dabei eine passende Datenbankadresse mit Host `postgres` enthalten. Die Containerdefinition ist vorbereitet; Docker steht in dieser Arbeitsumgebung nicht zur Laufzeitprüfung bereit. Vercel kann den stabilen Next.js-Webteil hosten; der persistente Worker benötigt einen eigenen Prozess/Container. Details: [Betrieb](docs/operations.md).
 
 ## Prüfungen
+
+### Vercel-Build
+
+`vercel.json` legt Next.js, `npm run build:node` und `.next` als Ausgabe fest. Der Standardbefehl `npm run build` erzeugt den Cloudflare-/Sites-Build und ist für Vercel ungeeignet. Die Konfiguration im Repository verhindert, dass Vercel diesen Standardbefehl verwendet.
+
+API-Schlüssel aus `.env.local` werden nicht mit Git übertragen. Für echten Datenbetrieb müssen sie zusätzlich als serverseitige Umgebungsvariablen im Vercel-Projekt sowie beim externen Worker hinterlegt werden. Vorschauen verwenden `APP_MODE=unconfigured`, `DEPLOYMENT_ENV=preview`, `SYNC_ENABLED=false` und ihre HTTPS-Adresse als `SITE_URL`, bis Datenbank und Import eingerichtet sind.
+
+### Lokale Prüfungen
 
 ```sh
 npm run i18n:check
