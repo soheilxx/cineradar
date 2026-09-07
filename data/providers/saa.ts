@@ -5,10 +5,14 @@ import { safeHttps } from '../../domain/offers';
 import { config } from '../../lib/config';
 import { request, ProviderError, type Reserve } from './http';
 const https = z.string().refine((x) => !!safeHttps(x));
+const optionalImage = z
+  .union([https, z.literal('')])
+  .nullish()
+  .transform((value) => value || null);
 const image = z.object({
-  darkThemeImage: https,
-  lightThemeImage: https,
-  whiteImage: https,
+  darkThemeImage: optionalImage,
+  lightThemeImage: optionalImage,
+  whiteImage: optionalImage,
 });
 const service = z.object({
   id: z.string().min(1),
@@ -108,7 +112,7 @@ export function providerFrom(raw: z.infer<typeof service>): Provider {
   return {
     id: raw.id,
     name: raw.name,
-    logo: raw.imageSet.darkThemeImage,
+    logo: raw.imageSet.darkThemeImage || raw.imageSet.lightThemeImage,
     url: raw.homePage,
     types: [],
     addons: [],

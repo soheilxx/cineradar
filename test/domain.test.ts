@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeShow, showSchema } from '../data/providers/saa';
+import {
+  countrySchema,
+  normalizeShow,
+  showSchema,
+} from '../data/providers/saa';
 import { ProviderError, request } from '../data/providers/http';
 import {
   freshness,
@@ -35,6 +39,59 @@ const raw = (type = 'movie', offers: unknown[] = [offer]) => ({
   showType: type,
   tmdbId: '1',
   streamingOptions: { de: offers },
+});
+test('Missing provider artwork does not discard valid countries or offers', () => {
+  const withoutArtwork = {
+    ...service,
+    imageSet: { darkThemeImage: '', lightThemeImage: '', whiteImage: '' },
+  };
+  const country = countrySchema.parse({
+    countryCode: 'fr',
+    name: 'France',
+    services: [
+      {
+        ...service,
+        streamingOptionTypes: {
+          subscription: true,
+          addon: true,
+          free: false,
+          rent: false,
+          buy: false,
+        },
+        addons: [withoutArtwork],
+      },
+    ],
+  });
+  assert.equal(country.services[0].addons[0].imageSet.darkThemeImage, null);
+  const normalized = normalizeShow(
+    raw('movie', [{ ...offer, service: withoutArtwork }]),
+    'movie',
+    1,
+    'de',
+  );
+  assert.equal(normalized.offers[0].provider.logo, null);
+  assert.equal(normalized.offers[0].link, offer.link);
+  assert.throws(
+    () =>
+      normalizeShow(
+        raw('movie', [
+          {
+            ...offer,
+            service: {
+              ...withoutArtwork,
+              imageSet: {
+                ...withoutArtwork.imageSet,
+                darkThemeImage: 'javascript:alert(1)',
+              },
+            },
+          },
+        ]),
+        'movie',
+        1,
+        'de',
+      ),
+    ProviderError,
+  );
 });
 test('Media type is part of stable identity; mismatched external mapping rejected', () => {
   assert.equal(

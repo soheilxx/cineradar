@@ -7,7 +7,10 @@ import { enqueue } from '../jobs/queue';
 const command = process.argv[2];
 if (command === 'worker') await run();
 else if (command === 'migrate') {
-  const d = new Client({ connectionString: config().DATABASE_URL });
+  const c = config();
+  const d = new Client({
+    connectionString: c.DATABASE_URL_UNPOOLED || c.DATABASE_URL,
+  });
   await d.connect();
   await d.query("SELECT pg_advisory_lock(hashtext('cineradar:migrations'))");
   await d.query(
@@ -48,7 +51,7 @@ else if (command === 'migrate') {
       dryRun: dry,
       markets: c.markets,
       maxTitles: 10,
-      tmdbRequests: 52,
+      tmdbRequests: 61,
       saaRequests: 11,
       estimatedSaaUnits: 11 * c.SAA_ENDPOINT_WEIGHT,
     }),

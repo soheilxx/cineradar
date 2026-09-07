@@ -4,7 +4,7 @@ Mehrsprachige Plattform zum Finden und Vergleichen legaler Streamingangebote. De
 
 ## Stand
 
-Die lokale Anwendung und ihre Quellenadapter sind implementiert. Die lokale Vorschau verwendet ausdrücklich gekennzeichnete Testangebote. Die lokal hinterlegten TMDb- und Movie-of-the-Night-Zugänge wurden am 7. September 2026 mit jeweils einer authentifizierten Anfrage erfolgreich geprüft. Eine echte Datenbank, Worker-Betrieb, Tarif-/Lizenzbestätigung und Betreiberangaben stehen noch aus; deshalb läuft kein produktiver Import. Eine private Sites-Veröffentlichung verwendet `APP_MODE=unconfigured` und zeigt keine Testangebote. Die genaue Abnahme steht in [docs/acceptance.md](docs/acceptance.md).
+Neon PostgreSQL ist in Frankfurt im freigegebenen Launch-Tarif eingerichtet und mit Vercel Preview/Development verbunden. Alle vier Migrationen sind angewendet. TMDb und Movie of the Night wurden authentifiziert geprüft; der erste begrenzte Import enthält zehn Titel und 822 Angebotsdatensätze für vier Märkte. Ein Titel ist bei der Angebotsquelle nicht vorhanden und bleibt ausdrücklich ungeprüft/fehlerhaft. Die Vercel-Vorschau verwendet echte Daten (`APP_MODE=live`); API- und Anwendungsschlüssel sind dort als Secrets hinterlegt. Dauerhafter Worker-Betrieb, öffentliche Produktionsfreigaben und Betreiberangaben stehen noch aus, daher bleibt `SYNC_ENABLED=false`. Die separate private Sites-Veröffentlichung bleibt vorerst `APP_MODE=unconfigured`. Die genaue Abnahme steht in [docs/acceptance.md](docs/acceptance.md).
 
 ## Lokal starten
 
@@ -23,7 +23,7 @@ npm run dev:node
 
 1. `.env.example` als `.env` für CLI/Container ausfüllen. Secrets niemals als `NEXT_PUBLIC_*`, im Git oder im Chat ablegen.
 2. `APP_MODE=live`, API-Zugang und `SESSION_SECRET` (32+ zufällige Zeichen) setzen. Den tatsächlichen API-Tarif in Tages-/Monatsbudgets und Endpoint-Gewicht abbilden. `SYNC_ENABLED=false` lassen, bis Migration und Dry Run geprüft sind.
-3. `npm run db:migrate`, `npm run budget:estimate`, `npm run import:dry` ausführen. Migrationen brauchen eine direkte PostgreSQL-Verbindung; Web auf Sites kann `DATABASE_DRIVER=neon` über HTTPS verwenden.
+3. `npm run db:migrate`, `npm run budget:estimate`, `npm run import:dry` ausführen. Migrationen verwenden `DATABASE_URL_UNPOOLED`, falls gesetzt, und brauchen eine direkte PostgreSQL-Verbindung für die Sitzungssperre. Web auf Vercel/Sites kann `DATABASE_DRIVER=neon` über HTTPS verwenden.
 4. `SYNC_ENABLED=true` setzen, `npm run import:bootstrap` und dauerhaft `npm run worker` betreiben. Ein Webaufruf führt keinen bezahlten Vollimport aus.
 5. Für öffentliche Produktion `DEPLOYMENT_ENV=production`, HTTPS-`SITE_URL`, Betreiberkontakt/-adresse, Admin-/Session-Secrets und bestätigte `LEGAL_APPROVED`/`LICENSES_CONFIRMED` setzen. Diese Freigaben nur nach tatsächlicher Prüfung aktivieren.
 

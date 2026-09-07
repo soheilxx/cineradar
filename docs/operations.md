@@ -1,5 +1,17 @@
 # Betrieb und Wiederanlauf
 
+## Einrichtung am 7. September 2026
+
+- Neon-Ressource `cineradar`, Frankfurt, PostgreSQL 18.6, vom Nutzer freigegebener Launch-Tarif; mit Vercel Preview und Development verbunden.
+- Vier Migrationen erfolgreich auf Neon angewendet. Migrationen bevorzugen die direkte `DATABASE_URL_UNPOOLED`; HTTP-Webzugriffe verwenden den Neon-Treiber.
+- Lokal und in Vercel Preview sind API-/Session-/Admin-/Cron-Secrets eingerichtet. Keine Secrets im Repository; `.env.local` ist für Web, `.env` für CLI/Worker.
+- Begrenzter Erstimport: zehn Titel, 822 Angebotsdatensätze, 47 Anbieter-/Marktzuordnungen. Neun Titel wurden von der Angebotsquelle beantwortet; einer lieferte 404 und bleibt als Fehler/fehlende Quellzuordnung sichtbar, ohne leere Verfügbarkeit vorzutäuschen.
+- Das echte Länderergebnis enthielt leere Add-on-Logos. Diese werden zu `null` normalisiert, während unsichere URLs weiter abgewiesen werden. Alle 65 Länder des gespeicherten Ergebnisses validieren; ein Regressionstest deckt den Fall ab.
+- Konservatives App-Budget: 25 SAA-Einheiten pro Tag, 1.000 pro Monat, jeweils mit 20 Prozent Puffer. Das Anbieterlimit von 1.000 bis 1. Oktober wurde im Quota-Header bestätigt; das Tageslimit ist eine interne Begrenzung. Der Erstimport lief ausschließlich als begrenzter lokaler Lauf. `SYNC_ENABLED=false` bleibt gesetzt; kein dauerhafter Worker wurde gestartet.
+- Lokale Readiness gegen Neon und deutsch-/englischsprachige Seiten antworten mit HTTP 200. 20 Domain-/Datenbanktests, Typecheck, Lint und Vercel-kompatibler Next.js-Build erfolgreich.
+
+Produktionsumgebung und öffentliche Domain sind damit noch nicht freigegeben. Ein kontinuierlicher Aktualisierungsdienst, ein echter `pg_dump`-/Restore-Nachweis und bestätigte Betreiber-/Lizenzangaben bleiben offen.
+
 ## Dienste
 
 Web und Worker sind getrennte Prozesse. Der Webserver liefert Seiten, validierte APIs und Gesundheitsendpunkte. `npm run worker` führt den Scheduler jede Minute und persistente Jobs aus. Serverless-Webhosting allein betreibt diesen Worker nicht. `/api/cron` ist mit `CRON_SECRET` geschützt und plant Arbeit ein, statt einen langen Import im HTTP-Request auszuführen.

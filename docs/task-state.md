@@ -1,5 +1,9 @@
 # Cineradar — Arbeitsstand, 6. September 2026
 
+## Aktualisierung vom 7. September 2026
+
+Die untenstehenden Einträge dokumentieren die ursprüngliche Abnahme. Inzwischen sind beide APIs authentifiziert geprüft, Neon `cineradar` in Frankfurt im ausdrücklich freigegebenen Launch-Tarif angelegt, vier Migrationen angewendet und Vercel Preview/Development verbunden. Secrets wurden für Preview eingerichtet. Der begrenzte Erstimport enthält zehn Titel, 822 Angebote und 47 Anbieter-/Marktzuordnungen; eine fehlende Quellzuordnung bleibt als Fehler gekennzeichnet. 20 Tests und lokaler Live-Readiness-Test erfolgreich. Vercel-Buildfehler durch expliziten Next.js-Build und bedingte Standalone-Ausgabe behoben. Dauerhafter Worker und öffentliche Produktionsfreigabe bleiben offen; Sync ist ausgeschaltet. Details in `operations.md`.
+
 Auftrag: Masterprompt um Englisch erweitern und die Plattform bauen. Zusätzlich verlangt der Nutzer ein dynamisches, unverwechselbares Design.
 
 ## Umgesetzt

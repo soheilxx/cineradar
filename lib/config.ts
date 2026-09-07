@@ -4,6 +4,7 @@ const envSchema = z.object({
   DEPLOYMENT_ENV: z.enum(['local', 'preview', 'production']).default('local'),
   SITE_URL: z.url().default('http://localhost:3000'),
   DATABASE_URL: z.string().optional(),
+  DATABASE_URL_UNPOOLED: z.string().optional(),
   DATABASE_DRIVER: z.enum(['pg', 'neon']).default('pg'),
   TMDB_READ_ACCESS_TOKEN: z.string().optional(),
   SAA_ACCESS_MODE: z.enum(['direct', 'rapidapi']).default('direct'),
