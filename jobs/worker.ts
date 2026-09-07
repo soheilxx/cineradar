@@ -5,7 +5,7 @@ import { schedule } from './scheduler';
 import { backoff, type Job } from './queue';
 import { ProviderError } from '../data/providers/http';
 import { log } from '../observability/log';
-export async function tick() {
+export async function tick(searchKey?: string) {
   const c = config();
   if (c.SYNC_ENABLED !== 'true') return false;
   const database = await db();
@@ -17,7 +17,12 @@ export async function tick() {
   if (paused) return false;
   const token = crypto.randomUUID();
   const job = (
-    await database.query<Job>('SELECT * FROM claim_job($1)', [token])
+    await database.query<Job>(
+      searchKey
+        ? 'SELECT * FROM claim_search_job($1,$2)'
+        : 'SELECT * FROM claim_job($1)',
+      searchKey ? [searchKey, token] : [token],
+    )
   ).rows[0];
   if (!job) return false;
   const start = Date.now();

@@ -18,7 +18,7 @@ import { db } from '../db';
 import { publicCache } from '../cache';
 import { config } from '../../lib/config';
 import { emptySnapshot, freshness } from '../../domain/offers';
-import { filterCatalog } from '../../domain/search';
+import { filterCatalog, parseSearchQuery } from '../../domain/search';
 import type { Locale } from '../../i18n/config';
 const compiler = new Kysely<Record<string, never>>({
   dialect: {
@@ -68,7 +68,7 @@ export async function catalog(
   f: Filters = {},
   limit = 24,
 ): Promise<{ items: CatalogItem[]; total: number; unavailable: boolean }> {
-  if (config().APP_MODE !== 'live' || f.mine?.length)
+  if (config().APP_MODE !== 'live' || f.mine?.length || f.q?.trim())
     return loadCatalog(locale, market, f, limit);
   return publicCache(
     'catalog:' + JSON.stringify([locale, market, f, limit]),
@@ -97,9 +97,9 @@ async function loadCatalog(
   if (!c.DATABASE_URL) return { items: [], total: 0, unavailable: true };
   try {
     const rawQuery = (f.q || '').trim().slice(0, 120);
-    const year =
-      f.year || Number(rawQuery.match(/\b((?:19|20)\d{2})\b/)?.[1]) || null;
-    const q = rawQuery.replace(/\b(?:19|20)\d{2}\b/g, '').trim();
+    const parsedSearch = parseSearchQuery(rawQuery);
+    const year = f.year || parsedSearch.year;
+    const q = parsedSearch.q;
     const conditions = [sql`true`];
     if (f.type) conditions.push(sql`t.media_type=${f.type}`);
     if (f.genre) conditions.push(sql`t.data->'genres' ? ${f.genre}`);

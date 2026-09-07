@@ -278,6 +278,38 @@ test('Accent-tolerant and typo-tolerant title search, year and duration filters'
   );
   assert.equal(filterCatalog(rows, 'fr', { audio: 'fr' }).length, 0);
 });
+test('Numeric titles remain searchable alongside optional release-year suffixes', () => {
+  const example = fixtureCatalog()[0];
+  const makeTitle = (name: string, year: number) => {
+    const item = structuredClone(example);
+    item.title.id = name;
+    item.title.originalTitle = name;
+    item.title.year = year;
+    for (const localization of Object.values(item.title.localizations))
+      localization.title = name;
+    return item;
+  };
+  const rows = [
+    makeTitle('1917', 2019),
+    makeTitle('An unrelated film', 1917),
+    makeTitle('2001: A Space Odyssey', 1968),
+    makeTitle('Inception', 2010),
+  ];
+  const found = (q: string, year?: number) =>
+    filterCatalog(rows, 'en', { q, year }).map((item) => item.title.id);
+  assert.deepEqual(found('1917'), ['1917']);
+  assert.deepEqual(found(' 1917 ', 2019), ['1917']);
+  assert.deepEqual(found('1917', 1917), []);
+  assert.deepEqual(found('1917 2019'), ['1917']);
+  assert.deepEqual(found('1917 2020'), []);
+  assert.deepEqual(found('2001: A Space Odyssey'), ['2001: A Space Odyssey']);
+  assert.deepEqual(found('2001: A Space Odyssey 1968'), [
+    '2001: A Space Odyssey',
+  ]);
+  assert.deepEqual(found('Inception 2010'), ['Inception']);
+  assert.deepEqual(found('Inception (2010)'), ['Inception']);
+  assert.deepEqual(found('Inception 2011'), []);
+});
 test('Pagination abort never advances watermark; looping cursor rejected', async () => {
   let committed = false;
   let n = 0;

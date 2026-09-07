@@ -44,6 +44,8 @@ const list = z.object({
     z.object({
       id: z.number().int().positive(),
       media_type: z.enum(['movie', 'tv', 'person']).optional(),
+      title: z.string().optional(),
+      name: z.string().optional(),
     }),
   ),
   total_pages: z.number().optional(),

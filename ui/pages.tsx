@@ -40,6 +40,7 @@ import { catalogCard } from '@/domain/cards';
 import { HomeShelf } from './home-shelf';
 import { FeaturedSpotlight } from './featured-spotlight';
 import { imageVariant, imageSet } from '@/domain/artwork';
+import { fold } from '@/domain/search';
 export function PageHeading({
   locale: _locale,
   title,
@@ -364,6 +365,17 @@ export function ListingPage({
               });
   const page = filters.page || 1;
   const pages = Math.max(1, Math.ceil(total / 24));
+  const searchQuery = (filters.q || '').trim();
+  const normalizedSearch = fold(searchQuery);
+  const needsSearch =
+    route === 'search' &&
+    searchQuery.length >= 2 &&
+    !items.some(({ title }) =>
+      [
+        title.originalTitle,
+        ...Object.values(title.localizations).map((value) => value.title),
+      ].some((name) => fold(name) === normalizedSearch),
+    );
   const link = (n: number) => {
     const p = new URLSearchParams();
     for (const [key, v] of Object.entries(filters))
@@ -407,6 +419,19 @@ export function ListingPage({
               <p className="hint">{t(locale, 'finderReason')}</p>
             )}
           </div>
+          {needsSearch && (
+            <SearchMore
+              key={JSON.stringify([locale, market, normalizedSearch])}
+              locale={locale}
+              market={market}
+              query={searchQuery}
+              enabled={
+                !unavailable &&
+                config().APP_MODE === 'live' &&
+                config().SYNC_ENABLED === 'true'
+              }
+            />
+          )}
           {items.length ? (
             <LazyCatalog
               key={JSON.stringify(filters)}
@@ -441,15 +466,6 @@ export function ListingPage({
               )}
             </PaginationContent>
           </Pagination>
-          {route === 'search' && total === 0 && (
-            <SearchMore
-              locale={locale}
-              query={filters.q || ''}
-              enabled={
-                config().APP_MODE === 'live' && config().SYNC_ENABLED === 'true'
-              }
-            />
-          )}
         </section>
       </div>
     </>

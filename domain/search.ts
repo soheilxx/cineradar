@@ -10,6 +10,15 @@ export function fold(s: string) {
     .replace(/\s+/g, ' ')
     .trim();
 }
+export function parseSearchQuery(query: string) {
+  const q = query.trim();
+  // Infer a release year only after a title: "1917" is a title, while
+  // "1917 2019" and "Inception (2010)" include a separate release year.
+  const match = q.match(/^(.*\S)\s+(?:\(((?:19|20)\d{2})\)|((?:19|20)\d{2}))$/);
+  return match
+    ? { q: match[1].trim(), year: Number(match[2] || match[3]) }
+    : { q, year: null };
+}
 function distance(a: string, b: string) {
   let row = Array.from({ length: b.length + 1 }, (_, i) => i);
   for (let i = 1; i <= a.length; i++) {
@@ -25,7 +34,7 @@ function distance(a: string, b: string) {
   return row[b.length];
 }
 export function searchScore(query: string, item: CatalogItem, locale: Locale) {
-  const q = fold(query.replace(/\b(?:19|20)\d{2}\b/g, ''));
+  const q = fold(parseSearchQuery(query).q);
   if (!q) return 1;
   const names = [
     item.title.localizations[locale].title,
@@ -53,8 +62,7 @@ export function filterCatalog(
   f: Filters,
   now = Date.now(),
 ) {
-  const year =
-    f.year || Number(f.q?.match(/\b((?:19|20)\d{2})\b/)?.[1]) || null;
+  const year = f.year || parseSearchQuery(f.q || '').year;
   return items
     .filter((item) => {
       const a = activeOffers(item.snapshot.offers, now);

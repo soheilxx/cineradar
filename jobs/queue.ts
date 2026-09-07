@@ -23,12 +23,22 @@ export async function enqueue(
     )
   ).rows;
 }
-export async function reserve(service: 'tmdb' | 'saa', units: number) {
+export async function reserve(
+  service: 'tmdb' | 'saa',
+  units: number,
+  interactive = false,
+) {
   const c = config();
-  const daily =
+  const dailyLimit =
     service === 'saa'
       ? Math.floor(c.SAA_DAILY_BUDGET * (1 - c.BUDGET_BUFFER))
       : c.TMDB_DAILY_BUDGET;
+  // Keep a small part of the existing cap available for explicitly submitted
+  // title searches; bulk discovery must not consume the entire daily allowance.
+  const daily =
+    service === 'saa' && !interactive
+      ? Math.max(0, dailyLimit - Math.min(100, Math.floor(dailyLimit * 0.1)))
+      : dailyLimit;
   const monthly =
     service === 'saa'
       ? Math.floor(c.SAA_MONTHLY_BUDGET * (1 - c.BUDGET_BUFFER))

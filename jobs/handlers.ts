@@ -12,6 +12,8 @@ import { ProviderError } from '../data/providers/http';
 import type { Title, MediaType } from '../domain/types';
 import { getTitle } from '../data/repositories/catalog';
 import { translateMissing } from '../data/providers/translation';
+import { normalizeTitleQuery } from './search';
+import { handleCatalogBackfill } from './catalog-backfill';
 export function importMarkets(
   job: Pick<Job, 'kind' | 'payload'>,
   enabled: string[],
@@ -24,8 +26,13 @@ export function importMarkets(
 export async function handle(job: Job) {
   const c = config();
   const database = await db();
-  const tmdb = new TMDB(reserve);
-  const saa = new SAA(reserve);
+  const interactive = job.kind === 'search' || job.payload.source === 'search';
+  const reserveForJob = (service: 'tmdb' | 'saa', units: number) =>
+    reserve(service, units, interactive);
+  const tmdb = new TMDB(reserveForJob);
+  const saa = new SAA(reserveForJob);
+  if (job.kind === 'catalog-backfill')
+    return handleCatalogBackfill(job, database, saa, c.markets);
   if (job.kind === 'countries') {
     const countries = await saa.countries();
     for (const market of c.markets) {
@@ -66,20 +73,75 @@ export async function handle(job: Job) {
             job.payload.locale as import('../i18n/config').Locale,
           )
         : await tmdb.trending();
-    for (const result of list.results
+    const matches = list.results
       .filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
-      .slice(0, 10)) {
-      await enqueue(
+      .sort((a, b) =>
+        job.kind === 'search'
+          ? Number(
+              normalizeTitleQuery(b.title || b.name || '') ===
+                normalizeTitleQuery(String(job.payload.query)),
+            ) -
+            Number(
+              normalizeTitleQuery(a.title || a.name || '') ===
+                normalizeTitleQuery(String(job.payload.query)),
+            )
+          : 0,
+      )
+      .slice(0, 10);
+    const imports: string[] = [];
+    for (const result of matches) {
+      const key =
         'import:' +
-          result.media_type +
-          ':' +
-          result.id +
-          ':' +
-          new Date().toISOString().slice(0, 10),
-        'import',
-        { type: result.media_type, id: result.id },
-      );
+        result.media_type +
+        ':' +
+        result.id +
+        ':' +
+        new Date().toISOString().slice(0, 10);
+      if (job.kind === 'search') {
+        const fresh = (
+          await database.query(
+            'SELECT 1 FROM snapshots WHERE title_id=$1 AND market=$2 AND checked_at>now()-make_interval(hours=>$3) AND error_code IS NULL',
+            [
+              `${result.media_type}:${result.id}`,
+              job.payload.market || c.markets[0],
+              c.STALE_HOURS,
+            ],
+          )
+        ).rows.length;
+        if (fresh) continue;
+        await database.query(
+          `INSERT INTO jobs(key,kind,payload,priority) VALUES($1,'import',$2,90)
+          ON CONFLICT(key) DO UPDATE SET priority=GREATEST(jobs.priority,90),
+          run_at=CASE WHEN jobs.state='queued' AND jobs.error_code='budget' AND jobs.payload->>'source' IS DISTINCT FROM 'search' THEN now() ELSE jobs.run_at END,
+          payload=jobs.payload||jsonb_build_object('source','search')`,
+          [
+            key,
+            JSON.stringify({
+              type: result.media_type,
+              id: result.id,
+              source: 'search',
+            }),
+          ],
+        );
+        imports.push(key);
+      } else
+        await enqueue(key, 'import', {
+          type: result.media_type,
+          id: result.id,
+        });
     }
+    if (job.kind === 'search')
+      await database.query(
+        "UPDATE jobs SET payload=payload||$3::jsonb WHERE id=$1 AND lock_token=$2 AND state='running'",
+        [
+          job.id,
+          job.lock_token,
+          JSON.stringify({
+            imports,
+            titleIds: matches.map((r) => `${r.media_type}:${r.id}`),
+          }),
+        ],
+      );
     return;
   }
   if (job.kind === 'catalog-page') {
@@ -168,10 +230,17 @@ export async function handle(job: Job) {
       [
         `catalog:${batch}:${market}:${type}`,
         JSON.stringify({
+          market,
+          type,
+          order,
+          batch,
           page,
           maxPages,
           hasMore: result.hasMore,
-          discoveryComplete: !result.hasMore || page === maxPages,
+          discoveryComplete: !result.hasMore,
+          batchComplete: !result.hasMore || page === maxPages,
+          nextCursor: result.hasMore ? result.nextCursor : null,
+          seen: [...seen, ...(cursor ? [cursor] : [])],
         }),
       ],
     );

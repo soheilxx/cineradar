@@ -1,5 +1,6 @@
 import { db, type Database } from '../data/db';
 import { config } from '../lib/config';
+import { scheduleCatalogBackfill } from './catalog-backfill';
 export async function schedule(now = new Date(), injected?: Database) {
   const c = config();
   if (c.SYNC_ENABLED !== 'true') return;
@@ -46,6 +47,7 @@ export async function schedule(now = new Date(), injected?: Database) {
     ON CONFLICT(key) DO NOTHING`,
     [JSON.stringify(jobs)],
   );
+  await scheduleCatalogBackfill(database, c.markets, now);
   // Claim and enqueue one daily refresh batch atomically. The minute cron must
   // not select another 500 titles whenever the oldest snapshots change.
   await database.query(
