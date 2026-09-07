@@ -35,6 +35,8 @@ npm run dev:node
 
 `vercel.json` legt Next.js, `npm run build:node` und `.next` als Ausgabe fest. Der Standardbefehl `npm run build` erzeugt den Cloudflare-/Sites-Build und ist für Vercel ungeeignet. Die Konfiguration im Repository verhindert, dass Vercel diesen Standardbefehl verwendet.
 
+Auf Vercel (`VERCEL=1`) wird `output: 'standalone'` ausgelassen: Der Vercel-Adapter erstellt das Deployment selbst. Das vermeidet den [Next.js-16.3-Fehler mit fehlender `next-server.js.nft.json`](https://github.com/vercel/next.js/issues/96646). Container und andere selbst gehostete Builds behalten ihre Standalone-Ausgabe.
+
 API-Schlüssel aus `.env.local` werden nicht mit Git übertragen. Für echten Datenbetrieb müssen sie zusätzlich als serverseitige Umgebungsvariablen im Vercel-Projekt sowie beim externen Worker hinterlegt werden. Vorschauen verwenden `APP_MODE=unconfigured`, `DEPLOYMENT_ENV=preview`, `SYNC_ENABLED=false` und ihre HTTPS-Adresse als `SITE_URL`, bis Datenbank und Import eingerichtet sind.
 
 ### Lokale Prüfungen
