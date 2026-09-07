@@ -26,7 +26,7 @@ export default async function RootLayout({
   const language = isLocale(languageHeader) ? languageHeader : 'en';
   const c = config();
   return (
-    <html lang={language} className="dark">
+    <html lang={language} className="dark" data-scroll-behavior="smooth">
       <head>
         <link rel="preconnect" href="https://image.tmdb.org" />
         <link
