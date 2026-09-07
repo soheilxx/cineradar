@@ -22,6 +22,8 @@
     "worker": "node --env-file-if-exists=.env --import tsx scripts/cli.ts worker",
     "import:dry": "node --env-file-if-exists=.env --import tsx scripts/cli.ts bootstrap --dry-run",
     "import:bootstrap": "node --env-file-if-exists=.env --import tsx scripts/cli.ts bootstrap",
+    "import:catalog": "node --env-file-if-exists=.env --import tsx scripts/cli.ts catalog",
+    "import:drain": "node --env-file-if-exists=.env --import tsx scripts/drain.ts",
     "budget:estimate": "node --env-file-if-exists=.env --import tsx scripts/cli.ts budget",
     "db:backup": "node --env-file-if-exists=.env --import tsx scripts/backup.ts backup",
     "db:restore": "node --env-file-if-exists=.env --import tsx scripts/backup.ts restore"

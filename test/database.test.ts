@@ -5,6 +5,7 @@ import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
 import { unaccent } from '@electric-sql/pglite/contrib/unaccent';
 import { readdir, readFile } from 'node:fs/promises';
 import { fixtureCatalog } from './fixtures/catalog';
+import { importMarkets } from '../jobs/handlers';
 let d: PGlite;
 before(async () => {
   d = new PGlite({ extensions: { pg_trgm, unaccent } });
@@ -219,4 +220,59 @@ test('Lease fencing rejects former worker and allows only current owner to commi
     )
   ).rows[0].data;
   assert.equal(title.localizations.de.overview, 'Reviewed copy');
+});
+
+test('Country catalog refresh preserves offers and snapshot in other countries', async () => {
+  const x = fixtureCatalog()[0];
+  const french = x.snapshot.offers.map((offer) => ({
+    ...offer,
+    id: 'fr-' + offer.id,
+    market: 'fr',
+  }));
+  await d.query('SELECT reconcile_offers($1,$2,$3,$4,true,true)', [
+    x.title.id,
+    'fr',
+    JSON.stringify(french),
+    'fr-existing',
+  ]);
+  const before = (
+    await d.query('SELECT * FROM snapshots WHERE title_id=$1 AND market=$2', [
+      x.title.id,
+      'fr',
+    ])
+  ).rows;
+  for (const market of importMarkets(
+    { kind: 'catalog-title', payload: { market: 'de' } },
+    ['de', 'fr', 'it', 'es'],
+  )) {
+    await d.query('SELECT reconcile_offers($1,$2,$3,$4,true,true)', [
+      x.title.id,
+      market,
+      '[]',
+      'de-catalog-empty',
+    ]);
+  }
+  assert.equal(
+    (await d.query('SELECT id FROM offers WHERE market=$1', ['fr'])).rows
+      .length,
+    french.length,
+  );
+  assert.deepEqual(
+    (
+      await d.query('SELECT * FROM snapshots WHERE title_id=$1 AND market=$2', [
+        x.title.id,
+        'fr',
+      ])
+    ).rows,
+    before,
+  );
+  assert.throws(() =>
+    importMarkets({ kind: 'catalog-title', payload: {} }, ['de', 'fr']),
+  );
+  assert.throws(() =>
+    importMarkets({ kind: 'catalog-title', payload: { market: 'us' } }, [
+      'de',
+      'fr',
+    ]),
+  );
 });

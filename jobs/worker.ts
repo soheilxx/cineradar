@@ -42,7 +42,8 @@ export async function tick() {
     });
   } catch (e) {
     const code = e instanceof ProviderError ? e.code : 'internal';
-    const dead = job.attempts >= 6 || code === 'auth' || code === 'schema';
+    const dead =
+      job.attempts >= 6 || ['auth', 'schema', 'missing'].includes(code);
     const wait = backoff(
       job.attempts,
       e instanceof ProviderError ? e.retryAfter : 0,

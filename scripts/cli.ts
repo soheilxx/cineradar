@@ -61,6 +61,35 @@ else if (command === 'migrate') {
     await enqueue('manual-bootstrap:' + Date.now(), 'bootstrap', {});
     await (await db()).close?.();
   }
+} else if (command === 'catalog') {
+  const c = config();
+  const dry = process.argv.includes('--dry-run');
+  const at = process.argv.indexOf('--pages');
+  const pages = at < 0 ? 25 : Number(process.argv[at + 1]);
+  if (!Number.isInteger(pages) || pages < 1 || pages > 100)
+    throw Error('--pages must be between 1 and 100');
+  const batch = new Date().toISOString().slice(0, 10) + ':' + pages;
+  console.log(
+    JSON.stringify({
+      dryRun: dry,
+      markets: c.markets,
+      pagesPerType: pages,
+      maxSaaRequests: c.markets.length * 2 * pages,
+      maxTitleMarketPairs: c.markets.length * 30 * pages,
+      metadataLanguages: 5,
+    }),
+  );
+  if (!dry) {
+    for (const market of c.markets)
+      for (const type of ['movie', 'tv']) {
+        await enqueue(
+          `catalog-page:${batch}:${market}:${type}:1`,
+          'catalog-page',
+          { market, type, page: 1, maxPages: pages, batch },
+        );
+      }
+    await (await db()).close?.();
+  }
 } else if (command === 'budget') {
   const c = config();
   console.log(
@@ -90,4 +119,7 @@ else if (command === 'migrate') {
 } else if (command === 'tick') {
   await tick();
   await (await db()).close?.();
-} else throw new Error('Expected migrate, worker, bootstrap, budget or tick');
+} else
+  throw new Error(
+    'Expected migrate, worker, bootstrap, catalog, budget or tick',
+  );

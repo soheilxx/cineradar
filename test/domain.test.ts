@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   countrySchema,
+  catalogPageSchema,
+  SAA,
   normalizeShow,
   showSchema,
 } from '../data/providers/saa';
@@ -39,6 +41,35 @@ const raw = (type = 'movie', offers: unknown[] = [offer]) => ({
   showType: type,
   tmdbId: '1',
   streamingOptions: { de: offers },
+});
+test('Catalog discovery preserves country, episode scope and opaque pagination cursor', async () => {
+  const original = globalThis.fetch;
+  const calls: URL[] = [];
+  let units = 0;
+  try {
+    globalThis.fetch = async (input) => {
+      calls.push(new URL(input instanceof Request ? input.url : input));
+      return Response.json({ shows: [raw('series')], hasMore: false });
+    };
+    const api = new SAA(async (_service, count) => {
+      units += count;
+      return true;
+    });
+    const result = await api.catalog('fr', 'tv', 'next+/=cursor');
+    assert.equal(result.shows.length, 1);
+    assert.equal(calls[0].pathname, '/v4/shows/search/filters');
+    assert.equal(calls[0].searchParams.get('country'), 'fr');
+    assert.equal(calls[0].searchParams.get('show_type'), 'series');
+    assert.equal(calls[0].searchParams.get('series_granularity'), 'episode');
+    assert.equal(calls[0].searchParams.get('cursor'), 'next+/=cursor');
+    assert.equal(units, 1);
+    assert.equal(
+      catalogPageSchema.safeParse({ shows: [], hasMore: true }).success,
+      false,
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
 });
 test('Missing provider artwork does not discard valid countries or offers', () => {
   const withoutArtwork = {

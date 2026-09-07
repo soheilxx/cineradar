@@ -135,7 +135,7 @@ export default async function Page({ params, searchParams }: Props) {
   let body: React.ReactNode;
   if (item) body = <DetailPage {...{ item, locale, market }} />;
   else if (route === 'home') {
-    const data = await catalog(locale, market, {}, 12);
+    const data = await catalog(locale, market, { scope: 'finder' }, 12);
     body = <HomePage {...{ locale, market, providers: ps, ...data }} />;
   } else if (route === 'watchlist')
     body = (

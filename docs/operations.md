@@ -12,6 +12,8 @@
 
 Produktionsumgebung und öffentliche Domain sind damit noch nicht freigegeben. Ein kontinuierlicher Aktualisierungsdienst, ein echter `pg_dump`-/Restore-Nachweis und bestätigte Betreiber-/Lizenzangaben bleiben offen.
 
+Der aktuelle Katalogausbau und Veröffentlichungsstand stehen in [catalog-release.md](catalog-release.md). Die oben genannten zehn Titel beschreiben ausschließlich den früheren Verbindungstest.
+
 ## Dienste
 
 Web und Worker sind getrennte Prozesse. Der Webserver liefert Seiten, validierte APIs und Gesundheitsendpunkte. `npm run worker` führt den Scheduler jede Minute und persistente Jobs aus. Serverless-Webhosting allein betreibt diesen Worker nicht. `/api/cron` ist mit `CRON_SECRET` geschützt und plant Arbeit ein, statt einen langen Import im HTTP-Request auszuführen.

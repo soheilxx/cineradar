@@ -1,6 +1,11 @@
 import { db } from '../data/db';
 import { TMDB } from '../data/providers/tmdb';
-import { SAA, normalizeShow, providerFrom } from '../data/providers/saa';
+import {
+  SAA,
+  normalizeShow,
+  providerFrom,
+  showSchema,
+} from '../data/providers/saa';
 import { config } from '../lib/config';
 import { enqueue, reserve, type Job } from './queue';
 import { ProviderError } from '../data/providers/http';
@@ -8,6 +13,15 @@ import type { Title, MediaType } from '../domain/types';
 import { getTitle } from '../data/repositories/catalog';
 import { translateMissing } from '../data/providers/translation';
 import { paginate } from './pagination';
+export function importMarkets(
+  job: Pick<Job, 'kind' | 'payload'>,
+  enabled: string[],
+) {
+  if (job.kind !== 'catalog-title') return enabled;
+  const market = String(job.payload.market);
+  if (!enabled.includes(market)) throw new ProviderError('schema');
+  return [market];
+}
 export async function handle(job: Job) {
   const c = config();
   const database = await db();
@@ -69,12 +83,95 @@ export async function handle(job: Job) {
     }
     return;
   }
-  if (job.kind === 'import' || job.kind === 'reconcile') {
+  if (job.kind === 'catalog-page') {
+    const market = String(job.payload.market);
+    const type = job.payload.type as MediaType;
+    const page = Number(job.payload.page);
+    const maxPages = Number(job.payload.maxPages);
+    const batch = String(job.payload.batch);
+    const cursor =
+      typeof job.payload.cursor === 'string' ? job.payload.cursor : undefined;
+    const seen = Array.isArray(job.payload.seen)
+      ? job.payload.seen.map(String)
+      : [];
+    if (
+      !c.markets.includes(market) ||
+      !['movie', 'tv'].includes(type) ||
+      !Number.isInteger(page) ||
+      page < 1 ||
+      !Number.isInteger(maxPages) ||
+      maxPages < 1 ||
+      maxPages > 100 ||
+      page > maxPages
+    )
+      throw new ProviderError('schema');
+    const result = await saa.catalog(market, type, cursor);
+    if (
+      result.hasMore &&
+      (!result.nextCursor ||
+        seen.includes(result.nextCursor) ||
+        result.nextCursor === cursor)
+    )
+      throw new ProviderError('schema');
+    for (const show of result.shows) {
+      const id = Number(show.tmdbId.split('/').at(-1));
+      // Validate the mapping before making a durable import job.
+      normalizeShow(show, type, id, market);
+      await enqueue(
+        `catalog-title:${batch}:${market}:${type}:${id}`,
+        'catalog-title',
+        {
+          type,
+          id,
+          market,
+          show,
+        },
+      );
+    }
+    if (result.hasMore && page < maxPages) {
+      await enqueue(
+        `catalog-page:${batch}:${market}:${type}:${page + 1}`,
+        'catalog-page',
+        {
+          market,
+          type,
+          page: page + 1,
+          maxPages,
+          batch,
+          cursor: result.nextCursor,
+          seen: [...seen, ...(cursor ? [cursor] : [])],
+        },
+      );
+    }
+    await database.query(
+      'INSERT INTO operations(key,data) VALUES($1,$2) ON CONFLICT(key) DO UPDATE SET data=EXCLUDED.data,updated_at=now()',
+      [
+        `catalog:${batch}:${market}:${type}`,
+        JSON.stringify({
+          page,
+          maxPages,
+          hasMore: result.hasMore,
+          discoveryComplete: !result.hasMore || page === maxPages,
+        }),
+      ],
+    );
+    return;
+  }
+  if (
+    job.kind === 'import' ||
+    job.kind === 'reconcile' ||
+    job.kind === 'catalog-title'
+  ) {
     const type = job.payload.type as MediaType;
     const id = Number(job.payload.id);
     if (!['movie', 'tv'].includes(type) || !Number.isSafeInteger(id) || id <= 0)
       throw new ProviderError('schema');
     const previous = (await getTitle(type + ':' + id, c.markets[0]))?.title;
+    const markets = importMarkets(job, c.markets);
+    const inlineShow =
+      job.kind === 'catalog-title' ? showSchema.parse(job.payload.show) : null;
+    // Filter search results only cover their requested country. Never mark
+    // unreturned countries empty or replace their existing offers.
     let title: Title;
     if (job.kind === 'import' || !previous) {
       title = await tmdb.title(type, id, previous);
@@ -95,8 +192,8 @@ export async function handle(job: Job) {
       ]);
     } else title = previous;
     try {
-      const show = await saa.show(type, id);
-      for (const market of c.markets) {
+      const show = inlineShow || (await saa.show(type, id));
+      for (const market of markets) {
         const result = normalizeShow(show, type, id, market);
         const supported =
           (
@@ -120,7 +217,7 @@ export async function handle(job: Job) {
       }
     } catch (e) {
       const code = e instanceof ProviderError ? e.code : 'upstream';
-      for (const market of c.markets) {
+      for (const market of markets) {
         await database.query(
           'INSERT INTO markets(code) VALUES($1) ON CONFLICT DO NOTHING',
           [market],

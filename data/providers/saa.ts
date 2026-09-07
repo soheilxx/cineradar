@@ -79,6 +79,13 @@ export const showSchema = z.object({
   streamingOptions: options,
   seasons: z.array(season).optional(),
 });
+export const catalogPageSchema = z
+  .object({
+    shows: z.array(showSchema),
+    hasMore: z.boolean(),
+    nextCursor: z.string().optional(),
+  })
+  .refine((page) => !page.hasMore || !!page.nextCursor);
 const changeSchema = z.object({
   changeType: z.enum(['new', 'updated', 'removed', 'expiring', 'upcoming']),
   showId: z.string(),
@@ -259,6 +266,21 @@ export class SAA {
       '/shows/' + encodeURIComponent(`${type}/${id}`),
       { output_language: 'en', series_granularity: 'episode' },
       showSchema,
+    );
+  }
+  catalog(market: string, type: MediaType, cursor?: string) {
+    return this.get(
+      '/shows/search/filters',
+      {
+        country: market,
+        show_type: type === 'tv' ? 'series' : 'movie',
+        order_by: 'popularity_1year',
+        order_direction: 'desc',
+        output_language: 'en',
+        series_granularity: 'episode',
+        ...(cursor ? { cursor } : {}),
+      },
+      catalogPageSchema,
     );
   }
   changes(

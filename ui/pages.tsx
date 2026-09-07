@@ -611,8 +611,13 @@ export function InfoPage({
     about: ['aboutText', 'helpIntro'],
     data: ['dataText', 'newDefinition', 'leavingDefinition', 'freeDefinition'],
     help: ['helpIntro', 'addonHelp', 'deviceOnly', 'dataText'],
-    privacy: ['privacyText'],
-    legal: ['legalPending'],
+    privacy: [
+      'privacyText',
+      'privacyHosting',
+      'privacyContact',
+      'privacyRights',
+    ],
+    legal: ['legalIntro'],
     credits: ['aboutText'],
     contact: [],
     report: [],
@@ -624,18 +629,19 @@ export function InfoPage({
         {(paragraphs[route] || []).map((k) => (
           <p key={k}>{t(locale, k)}</p>
         ))}
-        {route === 'legal' && c.OPERATOR_NAME && (
+        {['legal', 'privacy'].includes(route) && c.OPERATOR_NAME && (
           <address>
             {c.OPERATOR_NAME}
             <br />
             {c.OPERATOR_ADDRESS}
             <br />
-            {c.CONTACT_EMAIL}
+            <a href={'mailto:' + c.CONTACT_EMAIL}>{c.CONTACT_EMAIL}</a>
           </address>
         )}
-        {route === 'privacy' && c.LEGAL_APPROVED !== 'true' && (
-          <p className="notice">{t(locale, 'legalPending')}</p>
-        )}
+        {['legal', 'privacy'].includes(route) &&
+          c.LEGAL_APPROVED !== 'true' && (
+            <p className="notice">{t(locale, 'legalPending')}</p>
+          )}
         {route === 'credits' && (
           <>
             <a href="https://www.themoviedb.org/">

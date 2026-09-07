@@ -1,5 +1,7 @@
 # Cineradar — Arbeitsstand, 6. September 2026
 
+**Aktueller Stand vom 7. September:** 1.409 Titel und 68.032 Angebote; Betreiberangaben Wiresoft AG eingerichtet. Siehe [catalog-release.md](catalog-release.md). Frühere Angaben zu zehn Titeln und fehlenden Zugängen unten sind historisch.
+
 ## Aktualisierung vom 7. September 2026
 
 Die untenstehenden Einträge dokumentieren die ursprüngliche Abnahme. Inzwischen sind beide APIs authentifiziert geprüft, Neon `cineradar` in Frankfurt im ausdrücklich freigegebenen Launch-Tarif angelegt, vier Migrationen angewendet und Vercel Preview/Development verbunden. Secrets wurden für Preview eingerichtet. Der begrenzte Erstimport enthält zehn Titel, 822 Angebote und 47 Anbieter-/Marktzuordnungen; eine fehlende Quellzuordnung bleibt als Fehler gekennzeichnet. 20 Tests und lokaler Live-Readiness-Test erfolgreich. Vercel-Buildfehler durch expliziten Next.js-Build und bedingte Standalone-Ausgabe behoben. Dauerhafter Worker und öffentliche Produktionsfreigabe bleiben offen; Sync ist ausgeschaltet. Details in `operations.md`.
