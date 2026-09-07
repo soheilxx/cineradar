@@ -166,10 +166,7 @@ let inMemoryConsent: {
   value: Exclude<AnalyticsConsent, null>;
   at: number;
 } | null = null;
-let publisher:
-  | ((event: string, params: AnalyticsParams, onProcessed?: () => void) => void)
-  | null = null;
-export const NAVIGATION_EVENT_TIMEOUT = 250;
+let publisher: ((event: string, params: AnalyticsParams) => void) | null = null;
 export function setConsent(granted: boolean) {
   if (typeof window === 'undefined') return;
   inMemoryConsent = { value: granted ? 'granted' : 'denied', at: Date.now() };
@@ -227,42 +224,6 @@ export function trackEvent(name: string, params: AnalyticsParams = {}) {
     publisher?.(name, sanitizeAnalyticsParams(params));
   } catch {
     // Analytics must never interrupt the action the visitor is performing.
-  }
-}
-
-// Only full-document context changes use this bounded completion path. Normal
-// internal links navigate through Next.js without waiting for analytics.
-export function trackEventAndNavigate(
-  name: string,
-  params: AnalyticsParams,
-  navigate: () => void,
-) {
-  if (
-    typeof window === 'undefined' ||
-    currentConsent() !== 'granted' ||
-    !publisher ||
-    !events.has(name)
-  ) {
-    navigate();
-    return;
-  }
-  const publish = publisher;
-  let finished = false;
-  const finish = () => {
-    if (finished) return;
-    finished = true;
-    clearTimeout(timer);
-    unsubscribe();
-    navigate();
-  };
-  const timer = setTimeout(finish, NAVIGATION_EVENT_TIMEOUT);
-  const unsubscribe = subscribeConsent(() => {
-    if (currentConsent() !== 'granted') finish();
-  });
-  try {
-    publish(name, sanitizeAnalyticsParams(params), finish);
-  } catch {
-    finish();
   }
 }
 

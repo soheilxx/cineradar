@@ -1,6 +1,7 @@
 'use client';
 import { AppLink } from './app-link';
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import { usePathname } from 'next/navigation';
 import { BarChart3, Check, Settings2, X } from 'lucide-react';
 import {
   Dialog,
@@ -10,7 +11,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { analyticsCopy as copy } from '@/content/analytics';
-import { defaultMarkets, type Locale } from '@/i18n/config';
+import { comparisonRoute } from '@/content/comparisons/routes';
+import { defaultMarkets, isLocale, type Locale } from '@/i18n/config';
 import { path } from '@/i18n/routes';
 import {
   getConsent,
@@ -34,12 +36,20 @@ export function ConsentSettingsButton({ locale }: { locale: Locale }) {
 }
 
 export function AnalyticsConsent({
-  locale,
+  initialLocale,
   enabled,
 }: {
-  locale: Locale;
+  initialLocale: Locale;
   enabled: boolean;
 }) {
+  const pathname = usePathname();
+  const languageSegment = pathname.split('/')[1] || '';
+  const locale = isLocale(languageSegment)
+    ? languageSegment
+    : comparisonRoute(pathname)?.locale || initialLocale;
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
   const consent = useSyncExternalStore(
     subscribeConsent,
     getConsent,

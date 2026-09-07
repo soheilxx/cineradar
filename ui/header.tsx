@@ -1,6 +1,7 @@
 'use client';
 import { AppLink } from './app-link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Bookmark, Menu, X, Globe2, Search, ArrowUpRight } from 'lucide-react';
 import { Brand } from './brand';
 import { Choice } from './select';
@@ -14,7 +15,7 @@ import { path, type RouteKey } from '@/i18n/routes';
 import { t } from '@/i18n/messages';
 import { comparisonPath } from '@/content/comparisons/routes';
 import { copy } from '@/content/comparisons/copy';
-import { trackEvent, trackEventAndNavigate } from '@/lib/analytics';
+import { trackEvent } from '@/lib/analytics';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ export function Header({
   countryLinks: Record<string, string>;
   markets: string[];
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   function navigate(
     url: string,
@@ -52,15 +54,16 @@ export function Header({
       );
     } catch {}
     const destination = url + window.location.search;
-    trackEventAndNavigate(
-      'context_change',
-      {
-        filter_name: field,
-        filter_value: field === 'language' ? l : m,
-        source: 'header',
-      },
-      () => window.location.assign(destination),
-    );
+    trackEvent('context_change', {
+      filter_name: field,
+      filter_value: field === 'language' ? l : m,
+      source: 'header',
+    });
+    if (open) {
+      setOpen(false);
+      trackEvent('mobile_menu_close', { trigger: 'navigation' });
+    }
+    router.push(destination);
   }
   const menuLabel = {
     de: 'Menü',

@@ -45,8 +45,11 @@ export default async function RootLayout({
             nonce={h.get('x-nonce') || undefined}
             debug={c.GA4_DEBUG === 'true' && c.DEPLOYMENT_ENV === 'local'}
           />
+          <AnalyticsConsent
+            initialLocale={language}
+            enabled={c.analyticsEnabled}
+          />
         </Suspense>
-        <AnalyticsConsent locale={language} enabled={c.analyticsEnabled} />
       </body>
     </html>
   );
