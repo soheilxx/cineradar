@@ -1,6 +1,7 @@
+import { AppLink } from './app-link';
 export function Brand({ href = '/' }: { href?: string }) {
   return (
-    <a href={href} className="brand" aria-label="Cineradar">
+    <AppLink href={href} className="brand" aria-label="Cineradar">
       <svg
         width="32"
         height="32"
@@ -25,6 +26,6 @@ export function Brand({ href = '/' }: { href?: string }) {
       <span>
         cine<span className="gold">radar</span>
       </span>
-    </a>
+    </AppLink>
   );
 }

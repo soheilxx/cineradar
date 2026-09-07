@@ -208,7 +208,7 @@ Keinen dieser Messwerte als Werbeumsatz oder personenbezogene Nutzerinformation 
 
 ## Browserabnahme des aktuellen Arbeitsstands
 
-Die folgenden Prüfungen wurden im Root-In-App-Browser durchgeführt. Sie belegen das Verhalten des geprüften Arbeitsstands und des verbundenen GA4-Kontos; Push, Deployment und öffentliche HTTP-Abnahme auf cineradar.tv sind zum Zeitpunkt dieser Dokumentation noch offen.
+Die folgenden Prüfungen wurden im Codex-In-App-Browser durchgeführt. Der Stand ist auf cineradar.tv veröffentlicht. Dort wurden fehlende Google-Skripte vor Einwilligung sowie erfolgreiche HTTP-204-Messungen für Seitenaufrufe, Suchergebnisse und Titelansichten nach Zustimmung bestätigt. Konto- und DebugView-Prüfungen sowie Widerruf und mobile Darstellung wurden zusätzlich lokal geprüft.
 
 | Prüfung              | Beobachtetes Ergebnis                                                                                                                                                     |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -223,6 +223,8 @@ Die folgenden Prüfungen wurden im Root-In-App-Browser durchgeführt. Sie belege
 | Mobile Ansicht       | Bei 375 Pixeln Viewportbreite kein horizontaler Überlauf; Banner 351 Pixel breit.                                                                                         |
 
 Die zwei Schlüsselereignisse `provider_click` und `contact_success` wurden ohne Standard-Geldwert registriert. Die Zählweise ist einmal pro Ereignis. Es wurden keine zusätzlichen Ableitungsregeln erzeugt, die dieselbe Interaktion nochmals senden.
+
+Die Produktionsprüfung deckte einen Verlust unmittelbar vor vollständigen internen Seitenwechseln auf. Such- und Filteraktionen sowie interne Seitenlinks verwenden deshalb Next.js-Navigation mit persistenter Analytics-Runtime. Kataloglinks verzichten auf automatisches Prefetching. Die lokale Netzwerkabnahme bestätigt `ui_click`, `search_submit` und `title_select` zusammen mit den folgenden Seitenaufrufen. Mobiles Menüschließen und der Abbruch veralteter Lazyload-Anfragen sind für diese Navigation abgesichert. Notwendige Sprach-/Landwechsel behalten einen vollständigen Seitenwechsel und warten höchstens 250 Millisekunden auf die Tag-Verarbeitung; ohne Einwilligung erfolgt der Wechsel sofort.
 
 ## Grenzen und laufende Qualitätsprüfung
 

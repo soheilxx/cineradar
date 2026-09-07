@@ -26,12 +26,27 @@ export function LazyCatalog({
   const [failed, setFailed] = useState(false);
   const [automatic, setAutomatic] = useState(0);
   const lock = useRef(false);
+  const mounted = useRef(false);
+  const request = useRef<AbortController | null>(null);
   const sentinel = useRef<HTMLDivElement>(null);
   const hasMore = page * 24 < total;
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      request.current?.abort();
+      request.current = null;
+      lock.current = false;
+    };
+  }, []);
   const load = useCallback(
     async (auto = false) => {
-      if (lock.current || !hasMore) return;
+      if (!mounted.current || lock.current || !hasMore) return;
       lock.current = true;
+      const controller = new AbortController();
+      request.current = controller;
+      const current = () => mounted.current && request.current === controller;
+      const timeout = setTimeout(() => controller.abort(), 12000);
       setBusy(true);
       setFailed(false);
       const startedAt = performance.now();
@@ -56,10 +71,13 @@ export function LazyCatalog({
               Array.isArray(value) ? value.join(',') : String(value),
             );
         const response = await fetch('/api/catalog/?' + params.toString(), {
-          signal: AbortSignal.timeout(12000),
+          signal: controller.signal,
         });
+        if (!current()) return;
         if (!response.ok) throw Error('load');
         const data: { items: CardItem[]; page: number } = await response.json();
+        if (!current()) return;
+        if (controller.signal.aborted) throw Error('timeout');
         if (data.page !== page + 1 || !data.items.length) throw Error('page');
         setItems((current) => [
           ...new Map(
@@ -74,6 +92,7 @@ export function LazyCatalog({
           duration_ms: Math.round(performance.now() - startedAt),
         });
       } catch {
+        if (!current()) return;
         setFailed(true);
         trackEvent('catalog_load_error', {
           ...analytics,
@@ -81,8 +100,12 @@ export function LazyCatalog({
           error_code: 'load_failed',
         });
       } finally {
-        lock.current = false;
-        setBusy(false);
+        clearTimeout(timeout);
+        if (current()) {
+          request.current = null;
+          lock.current = false;
+          setBusy(false);
+        }
       }
     },
     [filters, hasMore, locale, market, page],

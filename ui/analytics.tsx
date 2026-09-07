@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   GA4_ID,
+  NAVIGATION_EVENT_TIMEOUT,
   analyticsPage,
   analyticsReferrer,
   currentConsent,
@@ -116,13 +117,18 @@ export function Analytics({
       page_title: `Cineradar | ${current.page_type}`,
       debug_mode: debug,
     });
-    setAnalyticsPublisher((event, params) => {
-      if (currentConsent() !== 'granted' || w['ga-disable-G-6VDG3EL0NF'])
+    setAnalyticsPublisher((event, params, onProcessed) => {
+      if (currentConsent() !== 'granted' || w['ga-disable-G-6VDG3EL0NF']) {
+        onProcessed?.();
         return;
+      }
       const context =
         eventContext.current?.page || analyticsPage(location.pathname);
-      if (analyticsPage(location.pathname).page_type === 'ops') return;
-      w.gtag?.('event', event, {
+      if (analyticsPage(location.pathname).page_type === 'ops' || !w.gtag) {
+        onProcessed?.();
+        return;
+      }
+      w.gtag('event', event, {
         ...params,
         content_language: context.locale,
         streaming_market: context.market,
@@ -135,6 +141,12 @@ export function Analytics({
         send_to: GA4_ID,
         transport_type: 'beacon',
         debug_mode: debug,
+        ...(onProcessed
+          ? {
+              event_callback: onProcessed,
+              event_timeout: NAVIGATION_EVENT_TIMEOUT,
+            }
+          : {}),
       });
     });
     return () => setAnalyticsPublisher(null);

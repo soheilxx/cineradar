@@ -1,4 +1,5 @@
 'use client';
+import { AppLink } from './app-link';
 import { useEffect, useState } from 'react';
 import { Bookmark } from 'lucide-react';
 import { useSaved } from './preferences';
@@ -104,9 +105,9 @@ export function Watchlist({
             <Bookmark size={38} />
             <h2>{t(locale, 'watchlist')}</h2>
             <p>{t(locale, 'emptyWatchlist')}</p>
-            <a className="button primary" href={path(locale, market)}>
+            <AppLink className="button primary" href={path(locale, market)}>
               {t(locale, 'browseAll')}
-            </a>
+            </AppLink>
           </div>
         )
       )}

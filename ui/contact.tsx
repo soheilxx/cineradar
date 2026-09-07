@@ -1,4 +1,5 @@
 'use client';
+import { AppLink } from './app-link';
 import { useRef, useState } from 'react';
 import { t } from '@/i18n/messages';
 import type { Locale } from '@/i18n/config';
@@ -135,7 +136,10 @@ export function ContactForm({
       {!enabled && <p>{t(locale, 'unavailableContact')}</p>}
       <p className="contact-privacy">
         {copy.privacy[locale]}{' '}
-        <a href={path(locale, market, 'privacy')}>{t(locale, 'privacy')}</a>.
+        <AppLink href={path(locale, market, 'privacy')}>
+          {t(locale, 'privacy')}
+        </AppLink>
+        .
       </p>
       <button
         className="button primary"

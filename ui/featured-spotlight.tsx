@@ -1,4 +1,5 @@
 'use client';
+import { AppLink } from './app-link';
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react';
 import { t } from '@/i18n/messages';
@@ -62,21 +63,21 @@ export function FeaturedSpotlight({
       <div className="spotlight-copy">
         <p className="eyebrow">{item.genres}</p>
         <h2>
-          <a
+          <AppLink
             href={item.href}
             data-analytics-title-id={item.id}
             data-analytics-source="spotlight"
             data-analytics-position={active + 1}
           >
             {item.title}
-          </a>
+          </AppLink>
         </h2>
         <p>
           {item.year} · {t(locale, item.type)}
         </p>
         <p className="spotlight-overview">{item.overview}</p>
         <div className="feature-actions">
-          <a
+          <AppLink
             className="button primary"
             href={item.href}
             data-analytics-title-id={item.id}
@@ -85,7 +86,7 @@ export function FeaturedSpotlight({
           >
             {t(locale, 'offers')}
             <ArrowUpRight size={18} />
-          </a>
+          </AppLink>
           <SaveButton id={item.id} locale={locale} market={market} />
         </div>
       </div>

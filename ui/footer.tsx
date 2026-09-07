@@ -1,3 +1,4 @@
+import { AppLink } from './app-link';
 import { Brand } from './brand';
 import { path } from '@/i18n/routes';
 import { t } from '@/i18n/messages';
@@ -44,33 +45,41 @@ export function Footer({ locale, market }: { locale: Locale; market: string }) {
             <h2>{labels.discover[locale]}</h2>
             {(['movies', 'series', 'providers', 'new', 'free'] as const).map(
               (k) => (
-                <a key={k} href={path(locale, market, k)}>
+                <AppLink key={k} href={path(locale, market, k)}>
                   {t(locale, k)}
-                </a>
+                </AppLink>
               ),
             )}
           </nav>
           <nav aria-label={labels.service[locale]}>
             <h2>{labels.service[locale]}</h2>
             {(['help', 'data', 'contact', 'watchlist'] as const).map((k) => (
-              <a key={k} href={path(locale, market, k)}>
+              <AppLink key={k} href={path(locale, market, k)}>
                 {t(locale, k)}
-              </a>
+              </AppLink>
             ))}
           </nav>
           <nav aria-label={labels.comparisons[locale]}>
             <h2>{labels.comparisons[locale]}</h2>
-            <a href={comparisonPath(locale)}>{labels.allComparisons[locale]}</a>
-            <a href={comparisonPath(locale, 'wer-streamt-es')}>WerStreamt.es</a>
-            <a href={comparisonPath(locale, 'justwatch')}>JustWatch</a>
-            <a href={comparisonPath(locale, 'playpilot')}>PlayPilot</a>
+            <AppLink href={comparisonPath(locale)}>
+              {labels.allComparisons[locale]}
+            </AppLink>
+            <AppLink href={comparisonPath(locale, 'wer-streamt-es')}>
+              WerStreamt.es
+            </AppLink>
+            <AppLink href={comparisonPath(locale, 'justwatch')}>
+              JustWatch
+            </AppLink>
+            <AppLink href={comparisonPath(locale, 'playpilot')}>
+              PlayPilot
+            </AppLink>
           </nav>
           <nav aria-label="Cineradar">
             <h2>Cineradar</h2>
             {(['about', 'legal', 'privacy', 'credits'] as const).map((k) => (
-              <a key={k} href={path(locale, market, k)}>
+              <AppLink key={k} href={path(locale, market, k)}>
                 {t(locale, k)}
-              </a>
+              </AppLink>
             ))}
             {analyticsEnabled && <ConsentSettingsButton locale={locale} />}
           </nav>
@@ -78,10 +87,10 @@ export function Footer({ locale, market }: { locale: Locale; market: string }) {
         <div className="footer-colophon">
           <p>© {new Date().getUTCFullYear()} Cineradar · Wiresoft AG</p>
           <div>
-            <a href="https://www.themoviedb.org/">TMDB</a>
-            <a href="https://docs.movieofthenight.com/">
+            <AppLink href="https://www.themoviedb.org/">TMDB</AppLink>
+            <AppLink href="https://docs.movieofthenight.com/">
               Streaming Availability API by Movie of the Night
-            </a>
+            </AppLink>
           </div>
         </div>
       </div>

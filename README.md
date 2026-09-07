@@ -56,6 +56,10 @@ Für E2E muss der lokale Server im Fixture-Modus auf Port 3000 laufen; CI starte
 
 ## Architektur und Dokumentation
 
+### Analytics und Navigation
+
+Interne Links, Suche und Filter wechseln Seiten über den Next.js-Router. Sprach- und Länderwechsel behalten die vollständige Navigation für den korrekten HTML-Sprachkontext. Mit Statistik-Einwilligung wartet nur dieser Wechsel auf die Verarbeitung von `context_change`, mit einem unabhängigen 250-ms-Fallback; ohne Einwilligung, ohne Publisher oder bei Fehlern geht es sofort weiter. Das dokumentierte Google-`event_callback` bestätigt die Ereignisverarbeitung, keine garantierte Netzwerkzustellung. Es gibt keine persistente Ereigniswarteschlange. [Google: Ereignissteuerung](https://developers.google.com/tag-platform/gtagjs/reference/parameters).
+
 - [Datenfluss und Entscheidungen](docs/architecture.md)
 - [Quellenvertrag und Kosten](docs/api-contract.md)
 - [SEO und fünf Sprachen](docs/seo-i18n.md)

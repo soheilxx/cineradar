@@ -14,6 +14,7 @@ import {
   subscribeConsent,
   subscribePageRestores,
   trackEvent,
+  trackEventAndNavigate,
 } from '../lib/analytics';
 import { locales } from '../i18n/config';
 import { path } from '../i18n/routes';
@@ -136,6 +137,116 @@ test('Analytics publisher failures cannot interrupt a visitor action', () => {
       completed = true;
     });
     assert.equal(completed, true);
+  });
+});
+
+test('Full-document navigation is immediate without consent, publisher, a known event or a working publisher', () => {
+  browser(() => {
+    let navigations = 0;
+    let publications = 0;
+    const navigate = () => {
+      navigations++;
+    };
+    setAnalyticsPublisher(() => {
+      publications++;
+    });
+    trackEventAndNavigate('context_change', {}, navigate);
+    assert.equal(navigations, 1);
+    assert.equal(publications, 0);
+    setConsent(true);
+    setAnalyticsPublisher(null);
+    trackEventAndNavigate('context_change', {}, navigate);
+    assert.equal(navigations, 2);
+    setAnalyticsPublisher(() => {
+      publications++;
+    });
+    trackEventAndNavigate('unknown_navigation', {}, navigate);
+    assert.equal(navigations, 3);
+    assert.equal(publications, 0);
+    setAnalyticsPublisher(() => {
+      throw Error('Transport unavailable');
+    });
+    trackEventAndNavigate('context_change', {}, navigate);
+    assert.equal(navigations, 4);
+  });
+});
+
+test('Event completion navigates exactly once and uses the same parameter sanitizer', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  browser(() => {
+    setConsent(true);
+    let navigations = 0;
+    const callbacks: Array<() => void> = [];
+    setAnalyticsPublisher((name, params, complete) => {
+      assert.equal(name, 'context_change');
+      assert.deepEqual(params, { filter_name: 'language', filter_value: 'en' });
+      assert.ok(complete);
+      callbacks.push(complete);
+    });
+    trackEventAndNavigate(
+      'context_change',
+      {
+        filter_name: 'language',
+        filter_value: 'en',
+        email: 'private@example.test',
+      },
+      () => {
+        navigations++;
+      },
+    );
+    assert.equal(navigations, 0);
+    callbacks[0]();
+    callbacks[0]();
+    t.mock.timers.tick(500);
+    assert.equal(navigations, 1);
+  });
+});
+
+test('An unresponsive or late tag cannot hold navigation beyond the 250ms fallback', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  browser(() => {
+    setConsent(true);
+    let navigations = 0;
+    const callbacks: Array<() => void> = [];
+    setAnalyticsPublisher((_name, _params, complete) => {
+      assert.ok(complete);
+      callbacks.push(complete);
+    });
+    trackEventAndNavigate('context_change', {}, () => {
+      navigations++;
+    });
+    t.mock.timers.tick(249);
+    assert.equal(navigations, 0);
+    t.mock.timers.tick(1);
+    assert.equal(navigations, 1);
+    callbacks[0]();
+    t.mock.timers.tick(500);
+    assert.equal(navigations, 1);
+  });
+});
+
+test('Withdrawal while awaiting event processing immediately releases navigation without replay', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  browser(() => {
+    setConsent(true);
+    let navigations = 0;
+    let publications = 0;
+    const callbacks: Array<() => void> = [];
+    setAnalyticsPublisher((_name, _params, complete) => {
+      publications++;
+      assert.ok(complete);
+      callbacks.push(complete);
+    });
+    trackEventAndNavigate('context_change', {}, () => {
+      navigations++;
+    });
+    setConsent(false);
+    assert.equal(navigations, 1);
+    callbacks[0]();
+    setConsent(true);
+    t.mock.timers.tick(500);
+    assert.equal(navigations, 1);
+    assert.equal(publications, 1);
   });
 });
 

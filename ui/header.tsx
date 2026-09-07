@@ -1,4 +1,5 @@
 'use client';
+import { AppLink } from './app-link';
 import { useState } from 'react';
 import { Bookmark, Menu, X, Globe2, Search, ArrowUpRight } from 'lucide-react';
 import { Brand } from './brand';
@@ -13,7 +14,7 @@ import { path, type RouteKey } from '@/i18n/routes';
 import { t } from '@/i18n/messages';
 import { comparisonPath } from '@/content/comparisons/routes';
 import { copy } from '@/content/comparisons/copy';
-import { trackEvent } from '@/lib/analytics';
+import { trackEvent, trackEventAndNavigate } from '@/lib/analytics';
 import {
   Dialog,
   DialogContent,
@@ -37,7 +38,12 @@ export function Header({
   markets: string[];
 }) {
   const [open, setOpen] = useState(false);
-  function navigate(url: string, l: string, m: string) {
+  function navigate(
+    url: string,
+    l: string,
+    m: string,
+    field: 'language' | 'market',
+  ) {
     document.cookie = `cr_context=${l}.${m}; Path=/; Max-Age=31536000; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
     try {
       localStorage.setItem(
@@ -45,7 +51,16 @@ export function Header({
         JSON.stringify({ locale: l, market: m }),
       );
     } catch {}
-    window.location.assign(url + window.location.search);
+    const destination = url + window.location.search;
+    trackEventAndNavigate(
+      'context_change',
+      {
+        filter_name: field,
+        filter_value: field === 'language' ? l : m,
+        source: 'header',
+      },
+      () => window.location.assign(destination),
+    );
   }
   const menuLabel = {
     de: 'Menü',
@@ -64,12 +79,7 @@ export function Header({
           label: countryName(locale, value),
         }))}
         onChange={(v) => {
-          trackEvent('context_change', {
-            filter_name: 'market',
-            filter_value: v,
-            source: 'header',
-          });
-          navigate(countryLinks[v] || path(locale, v), locale, v);
+          navigate(countryLinks[v] || path(locale, v), locale, v, 'market');
         }}
       />
       <Choice
@@ -80,11 +90,6 @@ export function Header({
           label: languageNames[value],
         }))}
         onChange={(v) => {
-          trackEvent('context_change', {
-            filter_name: 'language',
-            filter_value: v,
-            source: 'header',
-          });
           const nextMarket =
             v === 'en' && markets.includes('us') ? 'us' : market;
           navigate(
@@ -94,6 +99,7 @@ export function Header({
             ),
             v,
             nextMarket,
+            'language',
           );
         }}
       />
@@ -101,20 +107,20 @@ export function Header({
   );
   const nav = (['home', 'movies', 'series', 'providers'] as const).map(
     (key) => (
-      <a
+      <AppLink
         key={key}
         href={path(locale, market, key)}
         aria-current={route === key ? 'page' : undefined}
       >
         {t(locale, key)}
-      </a>
+      </AppLink>
     ),
   );
   return (
     <>
-      <a className="skip" href="#main" tabIndex={0}>
+      <AppLink className="skip" href="#main" tabIndex={0}>
         {t(locale, 'skip')}
-      </a>
+      </AppLink>
       <header className="site-header">
         <div className="container header-main">
           <Brand href={path(locale, market)} />
@@ -122,14 +128,14 @@ export function Header({
           <div className="header-controls">
             <Globe2 size={16} />
             {settings()}
-            <a
+            <AppLink
               className="nav-watch"
               aria-label={t(locale, 'watchlist')}
               href={path(locale, market, 'watchlist')}
             >
               <Bookmark size={20} />
               <span>{t(locale, 'watchlist')}</span>
-            </a>
+            </AppLink>
           </div>
           <Dialog
             open={open}
@@ -139,13 +145,13 @@ export function Header({
             }}
           >
             <div className="mobile-header-actions">
-              <a
+              <AppLink
                 className="mobile-icon"
                 href={path(locale, market, 'search')}
                 aria-label={t(locale, 'search')}
               >
                 <Search size={21} />
-              </a>
+              </AppLink>
               <DialogTrigger
                 className="mobile-nav-trigger"
                 aria-label={menuLabel}
@@ -160,6 +166,15 @@ export function Header({
               showCloseButton={false}
               className="mobile-nav-panel"
               style={{ translate: 'none', transform: 'none' }}
+              onClick={(event) => {
+                if (
+                  event.target instanceof Element &&
+                  event.target.closest('a[href]')
+                ) {
+                  setOpen(false);
+                  trackEvent('mobile_menu_close', { trigger: 'navigation' });
+                }
+              }}
             >
               <div className="mobile-nav-top">
                 <DialogTitle>{menuLabel}</DialogTitle>
@@ -173,14 +188,14 @@ export function Header({
               <nav className="mobile-primary-nav" aria-label={menuLabel}>
                 {nav}
                 {(['finder', 'watchlist'] as const).map((k) => (
-                  <a
+                  <AppLink
                     key={k}
                     href={path(locale, market, k)}
                     aria-current={route === k ? 'page' : undefined}
                   >
                     {t(locale, k)}
                     <ArrowUpRight size={19} />
-                  </a>
+                  </AppLink>
                 ))}
               </nav>
               <div className="mobile-context">
@@ -188,11 +203,13 @@ export function Header({
                 <div className="mobile-context-choices">{settings()}</div>
               </div>
               <nav className="mobile-support-nav">
-                <a href={comparisonPath(locale)}>{copy.hub[locale]}</a>
+                <AppLink href={comparisonPath(locale)}>
+                  {copy.hub[locale]}
+                </AppLink>
                 {(['help', 'contact', 'about'] as const).map((k) => (
-                  <a key={k} href={path(locale, market, k)}>
+                  <AppLink key={k} href={path(locale, market, k)}>
                     {t(locale, k)}
-                  </a>
+                  </AppLink>
                 ))}
               </nav>
               <Brand href={path(locale, market)} />

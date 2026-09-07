@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search as SearchIcon, ArrowRight } from 'lucide-react';
 import {
   Combobox,
@@ -40,6 +41,7 @@ export function Search({
   const [busy, setBusy] = useState(false);
   const seq = useRef(0);
   const ready = useHydrated();
+  const router = useRouter();
   function submitSearch() {
     trackEvent('search_submit', {
       locale,
@@ -48,7 +50,7 @@ export function Search({
       result_count: items.length,
     });
     onSearch?.();
-    window.location.assign(
+    router.push(
       path(locale, market, 'search') + '?q=' + encodeURIComponent(query),
     );
   }
@@ -135,7 +137,7 @@ export function Search({
               position: items.findIndex((item) => item.id === value.id) + 1,
             });
             onSearch?.();
-            window.location.assign(value.href);
+            router.push(value.href);
           }
         }}
       >

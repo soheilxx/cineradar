@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { t, type MessageKey } from '@/i18n/messages';
 import type { Locale } from '@/i18n/config';
 import { fold } from '@/domain/search';
@@ -65,6 +66,7 @@ export function SearchMore({
   query: string;
   enabled: boolean;
 }) {
+  const router = useRouter();
   const [state, setState] = useState<SearchState | 'idle'>('idle');
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -162,7 +164,7 @@ export function SearchMore({
                 state: result.state,
                 [reloadFlag]: true,
               });
-              window.location.reload();
+              router.refresh();
             }
             return;
           }
@@ -204,7 +206,7 @@ export function SearchMore({
       clearTimeout(deadline);
       controller.abort();
     };
-  }, [attempt, enabled, locale, market, query]);
+  }, [attempt, enabled, locale, market, query, router]);
 
   if (!enabled || query.trim().length < 2) return null;
   const busy = state === 'queued' || state === 'running';

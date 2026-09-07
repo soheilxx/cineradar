@@ -1,6 +1,6 @@
 # Cineradar: Masterplan für Sitemaps und Google-Indexierung
 
-**Stand: 7. September 2026 · Status: technische Phase 1 umgesetzt und erste Datenbankgeneration erzeugt; öffentliche HTTP-Abnahme noch ausstehend**
+**Stand: 7. September 2026 · Status: technische Phase 1 live; vollständige öffentliche XML-Abnahme bestanden**
 
 Das Ziel ist ein verlässliches Verzeichnis aller hochwertigen, kanonischen Cineradar-Seiten: vollständig gegenüber dem freigegebenen eigenen Bestand, international eindeutig und automatisch aktuell. Eine fehlende Serie wie „4 Blocks“ soll nach einem erfolgreichen Import auch in der richtigen Sitemap erscheinen. Eine Sitemap kann allerdings keine Titel erschließen, die noch nicht im Katalog stehen.
 
@@ -15,9 +15,9 @@ Der erste Ausbau umfasst den Generator und die konsistente Veröffentlichung aus
 | Erster erfolgreicher Datenbankexport | **67.096 URLs in 230 Teildateien**, erzeugt in **25,6 Sekunden**. Dies sind Sprach-/Marktvarianten und weitere Seiten-URLs, **nicht 67.096 verschiedene Filme oder Serien**. |
 | Speicherung                          | Unveränderliche, mit Gzip komprimierte XML-Artefakte je Generation.                                                                                                          |
 | Konsistenz                           | Der Masterindex und seine Dateien gehören zu derselben Generation; die neue Generation wird atomar veröffentlicht.                                                           |
-| Aktualisierung                       | Ein eigener Cronlauf ist alle **15 Minuten** konfiguriert. Die Konfiguration belegt noch keine bereits erfolgreich durchgelaufene öffentliche Cronausführung.                |
+| Aktualisierung                       | Der veröffentlichte Cron hat um **18:37:44 UTC** erfolgreich exportiert (24,1 Sekunden, kein Fehler oder verbliebener Lease). Der Publisher prüft alle **15 Minuten** auf Änderungen. |
 | Validierung im Arbeitsstand          | **79 Tests und der vollständige Produktionsbuild bestanden**.                                                                                                                |
-| Öffentliche Abnahme                  | HTTP-Prüfung der veröffentlichten Masteradresse und ihrer Kinder, Canonical-/Robots-Stichproben sowie GSC-Verarbeitung sind noch gesondert nachzuweisen.                     |
+| Öffentliche Abnahme                  | Master und **alle 230 Teildateien HTTP 200**, vollständige XML-Prüfung: **67.293 URLs**, keine Dubletten, 5.302 gegenseitige Sprachgruppen, Bildangaben, Größenlimits, Gzip und bedingte 304-Antworten geprüft. GSC-Verarbeitung steht nach der Einreichung noch aus. |
 
 Noch offen bleiben die Indexierungs- und Canonical-Entscheidungen für Informationsseiten, eigenständige redaktionelle Ratgeber, eine kontrollierte eigene Bildauslieferung, der sofortige Ausschluss zurückgezogener URLs aus bereits veröffentlichten Generationen und das laufende Monitoring mit Warnungen. Die folgenden Abschnitte bleiben dafür die fachliche Zielvorgabe. Die ursprünglichen Live-Befunde in Abschnitt 1 beschreiben den Zustand **vor diesem Umbau**.
 

@@ -1,3 +1,4 @@
+import { AppLink } from './app-link';
 import { infoDescriptions, infoHeadings } from '@/content/info';
 import {
   ArrowRight,
@@ -147,7 +148,7 @@ export function HomePage({
           />
           <div className="feature-side">
             {second && (
-              <a
+              <AppLink
                 href={titlePath(second, locale, market)}
                 className="side-spotlight"
                 aria-label={second.title.localizations[locale].title}
@@ -173,16 +174,19 @@ export function HomePage({
                     <ArrowUpRight size={19} />
                   </span>
                 </div>
-              </a>
+              </AppLink>
             )}
-            <a href={path(locale, market, 'finder')} className="finder-teaser">
+            <AppLink
+              href={path(locale, market, 'finder')}
+              className="finder-teaser"
+            >
               <Compass size={28} />
               <div>
                 <p className="eyebrow">{t(locale, 'finder')}</p>
                 <h3>{t(locale, 'finderIntro')}</h3>
               </div>
               <ArrowUpRight size={24} />
-            </a>
+            </AppLink>
           </div>
         </section>
       ) : (
@@ -197,18 +201,18 @@ export function HomePage({
             <span className="eyebrow gold">02 — {t(locale, 'home')}</span>
             <h2>{t(locale, 'trendingNow')}</h2>
           </div>
-          <a className="text-link" href={path(locale, market, 'movies')}>
+          <AppLink className="text-link" href={path(locale, market, 'movies')}>
             {t(locale, 'browseAll')}
             <ArrowRight size={18} />
-          </a>
+          </AppLink>
         </div>
         <div className="category-nav">
           {(['movies', 'series', 'new', 'leaving', 'free'] as const).map(
             (key) => (
-              <a key={key} href={path(locale, market, key)}>
+              <AppLink key={key} href={path(locale, market, key)}>
                 {t(locale, key)}
                 <ArrowUpRight size={15} />
-              </a>
+              </AppLink>
             ),
           )}
         </div>
@@ -225,11 +229,11 @@ export function HomePage({
         </div>
         <div className="genre-links">
           {(['scifi', 'thriller', 'comedy', 'drama'] as const).map((g, i) => (
-            <a key={g} href={path(locale, market, 'topics', g)}>
+            <AppLink key={g} href={path(locale, market, 'topics', g)}>
               <span>0{i + 1}</span>
               {t(locale, g)}
               <ArrowUpRight size={20} />
-            </a>
+            </AppLink>
           ))}
         </div>
       </section>
@@ -317,14 +321,17 @@ export function HomePage({
           {t(locale, 'guideCountry', { country: countryName(locale, market) })}
         </p>
         <nav className="context-links">
-          <a className="button" href={path(locale, market, 'finder')}>
+          <AppLink className="button" href={path(locale, market, 'finder')}>
             {t(locale, 'finder')}
             <ArrowRight size={18} />
-          </a>
-          <a className="text-link" href={path(locale, market, 'myProviders')}>
+          </AppLink>
+          <AppLink
+            className="text-link"
+            href={path(locale, market, 'myProviders')}
+          >
             {t(locale, 'myProviders')}
             <ArrowRight size={18} />
-          </a>
+          </AppLink>
         </nav>
       </section>
     </>
@@ -406,10 +413,15 @@ export function ListingPage({
     <>
       <PageHeading {...{ locale, title, description }} />
       {route === 'search' && (
-        <Search {...{ locale, market }} initial={filters.q} />
+        <Search
+          key={filters.q || ''}
+          {...{ locale, market }}
+          initial={filters.q}
+        />
       )}
       <div className="catalog-layout">
         <FilterControls
+          key={JSON.stringify(filters)}
           {...{ locale, providers }}
           initial={filters}
           finder={route === 'finder'}
@@ -445,7 +457,13 @@ export function ListingPage({
           )}
           {items.length ? (
             <LazyCatalog
-              key={JSON.stringify(filters)}
+              key={JSON.stringify([
+                locale,
+                market,
+                filters,
+                total,
+                items.map((item) => item.title.id),
+              ])}
               initialItems={items.map((item) => catalogCard(item, locale))}
               {...{ locale, market, filters, total }}
             />
@@ -509,13 +527,13 @@ export function DetailPage({
         }}
       />
       <nav className="breadcrumbs">
-        <a href={path(locale, market)}>{t(locale, 'home')}</a>
+        <AppLink href={path(locale, market)}>{t(locale, 'home')}</AppLink>
         <span>/</span>
-        <a
+        <AppLink
           href={path(locale, market, d.type === 'movie' ? 'movies' : 'series')}
         >
           {t(locale, d.type === 'movie' ? 'movies' : 'series')}
-        </a>
+        </AppLink>
         <span>/</span>
         <span>{l.title}</span>
       </nav>
@@ -581,9 +599,11 @@ export function DetailPage({
           )}
           <SaveButton id={d.id} {...{ locale, market }} />
           <nav className="detail-anchors">
-            <a href="#offers">{t(locale, 'offers')}</a>
-            {d.type === 'tv' && <a href="#seasons">{t(locale, 'seasons')}</a>}
-            <a href="#info">{t(locale, 'info')}</a>
+            <AppLink href="#offers">{t(locale, 'offers')}</AppLink>
+            {d.type === 'tv' && (
+              <AppLink href="#seasons">{t(locale, 'seasons')}</AppLink>
+            )}
+            <AppLink href="#info">{t(locale, 'info')}</AppLink>
           </nav>
         </div>
       </section>
@@ -687,7 +707,7 @@ export function DetailPage({
         <aside>
           <span className="eyebrow">{t(locale, 'originalTitle')}</span>
           <p>{d.originalTitle}</p>
-          <a
+          <AppLink
             className="text-link"
             href={
               path(locale, market, 'report') +
@@ -697,7 +717,7 @@ export function DetailPage({
           >
             {t(locale, 'report')}
             <ArrowUpRight size={16} />
-          </a>
+          </AppLink>
         </aside>
       </section>
       <section className="section title-questions">
@@ -712,14 +732,14 @@ export function DetailPage({
         </div>
         <nav className="context-links">
           {content.providers.map((provider) => (
-            <a
+            <AppLink
               className="text-link"
               key={provider.id}
               href={path(locale, market, 'providers', provider.id)}
             >
               {t(locale, 'providerPicks', { provider: provider.name })}
               <ArrowUpRight size={15} />
-            </a>
+            </AppLink>
           ))}
         </nav>
       </section>
@@ -750,7 +770,7 @@ export function ProviderPage({
       />
       <div className="provider-grid">
         {providers.map((p) => (
-          <a
+          <AppLink
             key={p.id}
             className="provider-tile"
             href={path(locale, market, 'providers', p.id)}
@@ -763,7 +783,7 @@ export function ProviderPage({
             <h2>{p.name}</h2>
             <p>{p.types.map((type) => t(locale, type)).join(' · ')}</p>
             <ArrowUpRight size={22} />
-          </a>
+          </AppLink>
         ))}
       </div>
       {!providers.length && <Empty locale={locale} unavailable />}
@@ -822,22 +842,24 @@ export function InfoPage({
         <aside className="info-page-aside">
           <nav>
             {(paragraphs[route] || []).map((k) => (
-              <a key={k} href={'#' + k}>
+              <AppLink key={k} href={'#' + k}>
                 {infoHeadings[k as keyof typeof infoHeadings]?.[locale] ||
                   t(locale, route as MessageKey)}
-              </a>
+              </AppLink>
             ))}
             {route === 'privacy' && c.analyticsEnabled && (
-              <a href="#analytics">{analyticsPrivacyCopy.heading[locale]}</a>
+              <AppLink href="#analytics">
+                {analyticsPrivacyCopy.heading[locale]}
+              </AppLink>
             )}
           </nav>
           <nav>
             {(['about', 'help', 'data', 'contact', 'legal', 'privacy'] as const)
               .filter((k) => k !== route)
               .map((k) => (
-                <a key={k} href={path(locale, market, k)}>
+                <AppLink key={k} href={path(locale, market, k)}>
                   {t(locale, k)}
-                </a>
+                </AppLink>
               ))}
           </nav>
         </aside>
@@ -866,21 +888,21 @@ export function InfoPage({
                 <p key={key}>{analyticsPrivacyCopy[key][locale]}</p>
               ))}
               <p>
-                <a
+                <AppLink
                   className="text-link"
                   href={`https://policies.google.com/privacy?hl=${locale}`}
                   rel="noopener noreferrer"
                 >
                   Google · {t(locale, 'privacy')}
-                </a>
+                </AppLink>
                 {' · '}
-                <a
+                <AppLink
                   className="text-link"
                   href={`https://support.google.com/analytics/answer/12017362?hl=${locale}`}
                   rel="noopener noreferrer"
                 >
                   Google Analytics
-                </a>
+                </AppLink>
               </p>
               <ConsentSettingsButton locale={locale} />
             </section>
@@ -891,7 +913,9 @@ export function InfoPage({
               <br />
               {c.OPERATOR_ADDRESS}
               <br />
-              <a href={'mailto:' + c.CONTACT_EMAIL}>{c.CONTACT_EMAIL}</a>
+              <AppLink href={'mailto:' + c.CONTACT_EMAIL}>
+                {c.CONTACT_EMAIL}
+              </AppLink>
             </address>
           )}
           {route === 'legal' && c.OPERATOR_NAME === 'Wiresoft AG' && (
@@ -916,7 +940,7 @@ export function InfoPage({
                   <dd>CH-170.3.027.782-3</dd>
                 </div>
               </dl>
-              <a
+              <AppLink
                 href="https://www.uid.admin.ch/Detail.aspx?uid_id=CHE112097691"
                 className="text-link"
               >
@@ -930,7 +954,7 @@ export function InfoPage({
                         ? 'Registro UID suizo'
                         : 'Swiss UID register'}{' '}
                 <ArrowUpRight size={16} />
-              </a>
+              </AppLink>
             </div>
           )}
           {['legal', 'privacy'].includes(route) &&
@@ -939,7 +963,7 @@ export function InfoPage({
             )}
           {route === 'credits' && (
             <>
-              <a href="https://www.themoviedb.org/">
+              <AppLink href="https://www.themoviedb.org/">
                 <img
                   className="tmdb-logo"
                   src="https://www.themoviedb.org/assets/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg"
@@ -947,15 +971,18 @@ export function InfoPage({
                   height="50"
                   alt="TMDb"
                 />
-              </a>
+              </AppLink>
               <p lang="en">
                 This product uses the TMDB API but is not endorsed or certified
                 by TMDB.
               </p>
-              <a className="text-link" href="https://docs.movieofthenight.com/">
+              <AppLink
+                className="text-link"
+                href="https://docs.movieofthenight.com/"
+              >
                 Streaming Availability API by Movie of the Night{' '}
                 <ArrowUpRight size={18} />
-              </a>
+              </AppLink>
             </>
           )}
         </div>

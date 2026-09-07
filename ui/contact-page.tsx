@@ -1,3 +1,4 @@
+import { AppLink } from './app-link';
 import { ArrowUpRight, CircleHelp, Building2 } from 'lucide-react';
 import { ContactForm } from './contact';
 import { contactCopy as copy } from '@/content/contact';
@@ -36,9 +37,9 @@ export function ContactPage({
             <CircleHelp size={25} />
             <h2>{copy.service[locale]}</h2>
             <p>{copy.help[locale]}</p>
-            <a className="text-link" href={path(locale, market, 'help')}>
+            <AppLink className="text-link" href={path(locale, market, 'help')}>
               {t(locale, 'help')} <ArrowUpRight size={18} />
-            </a>
+            </AppLink>
           </section>
           <section>
             <h2>{copy.provider[locale]}</h2>
@@ -52,9 +53,9 @@ export function ContactPage({
               <br />
               {c.OPERATOR_ADDRESS}
             </address>
-            <a className="text-link" href={path(locale, market, 'legal')}>
+            <AppLink className="text-link" href={path(locale, market, 'legal')}>
               {t(locale, 'legal')} <ArrowUpRight size={18} />
-            </a>
+            </AppLink>
           </section>
         </aside>
       </div>

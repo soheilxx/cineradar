@@ -1,4 +1,5 @@
 'use client';
+import { AppLink } from './app-link';
 import { useEffect, useState } from 'react';
 import { Check, Plus, X } from 'lucide-react';
 import {
@@ -162,7 +163,7 @@ export function ProviderSelection({
         </DialogContent>
       </Dialog>
       {selection.length > 0 && (
-        <a
+        <AppLink
           className="my-filter"
           href={
             path(locale, market, 'movies') +
@@ -171,7 +172,7 @@ export function ProviderSelection({
           }
         >
           {t(locale, 'inMine')} →
-        </a>
+        </AppLink>
       )}
     </div>
   );

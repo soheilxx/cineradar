@@ -1,3 +1,4 @@
+import { AppLink } from './app-link';
 import type { CatalogItem } from '@/domain/types';
 import type { Locale } from '@/i18n/config';
 import { t } from '@/i18n/messages';
@@ -41,7 +42,7 @@ export function PosterCard({
       style={{ '--card-order': index } as React.CSSProperties}
     >
       <div className="poster-wrap">
-        <a
+        <AppLink
           href={titlePath(item, locale, market)}
           aria-label={title}
           className="poster-link"
@@ -67,7 +68,7 @@ export function PosterCard({
           <span className="poster-arrow">
             <ArrowUpRight />
           </span>
-        </a>
+        </AppLink>
         <SaveButton id={card.id} locale={locale} market={market} compact />
         {card.rating !== null && (
           <span className="rating" title={t(locale, 'rating')}>
@@ -78,14 +79,14 @@ export function PosterCard({
           </span>
         )}
       </div>
-      <a
+      <AppLink
         href={titlePath(item, locale, market)}
         data-analytics-title-id={card.id}
         data-analytics-media-type={card.type}
         data-analytics-position={position ?? index + 1}
       >
         <h3>{title}</h3>
-      </a>
+      </AppLink>
       <p className="card-meta">
         {card.year} <span>·</span> {t(locale, card.type)}{' '}
         {card.runtime && (

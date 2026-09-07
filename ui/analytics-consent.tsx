@@ -1,4 +1,5 @@
 'use client';
+import { AppLink } from './app-link';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { BarChart3, Check, Settings2, X } from 'lucide-react';
 import {
@@ -98,7 +99,7 @@ export function AnalyticsConsent({
             <button type="button" onClick={() => setSettingsOpen(true)}>
               {copy.more[locale]}
             </button>
-            <a href={privacyHref}>{copy.privacy[locale]}</a>
+            <AppLink href={privacyHref}>{copy.privacy[locale]}</AppLink>
           </div>
           <p className="analytics-consent-storage">
             {copy.bannerStorage[locale]}
@@ -156,9 +157,9 @@ export function AnalyticsConsent({
             </button>
           </div>
           <p className="analytics-consent-storage">{copy.storage[locale]}</p>
-          <a className="analytics-consent-privacy" href={privacyHref}>
+          <AppLink className="analytics-consent-privacy" href={privacyHref}>
             {copy.privacy[locale]}
-          </a>
+          </AppLink>
         </DialogContent>
       </Dialog>
     </>

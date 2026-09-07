@@ -1,3 +1,4 @@
+import { AppLink } from './app-link';
 import { headers } from 'next/headers';
 import {
   ArrowRight,
@@ -85,12 +86,12 @@ export async function ComparisonPage({
           {crumbs.map((x, i) => (
             <span key={x.url}>
               {i > 0 && <span aria-hidden="true">/</span>}
-              <a
+              <AppLink
                 href={x.url}
                 aria-current={i === crumbs.length - 1 ? 'page' : undefined}
               >
                 {x.name}
-              </a>
+              </AppLink>
             </span>
           ))}
         </nav>
@@ -126,9 +127,12 @@ export async function ComparisonPage({
           </div>
           <aside className="comparison-search-card">
             <ComparisonSearch locale={locale} id={id} markets={c.markets} />
-            <a className="text-link" href={item ? '#comparison' : '#guides'}>
+            <AppLink
+              className="text-link"
+              href={item ? '#comparison' : '#guides'}
+            >
               {copy.compare[locale]} <ArrowRight size={18} />
-            </a>
+            </AppLink>
           </aside>
         </section>
         {item ? (
@@ -167,19 +171,19 @@ export async function ComparisonPage({
                         <td>
                           <p>{claim.text[locale]}</p>
                           <small>{claim.scope[locale]}</small>
-                          <a
+                          <AppLink
                             className="claim-source"
                             href={claim.source}
                             rel="noopener"
                           >
                             {copy.status[claim.status][locale]} ·{' '}
                             {copy.source[locale]} <ArrowUpRight size={12} />
-                          </a>
+                          </AppLink>
                         </td>
                         <td>
                           <p>{features[claim.feature].value[locale]}</p>
                           <small>{features[claim.feature].scope[locale]}</small>
-                          <a
+                          <AppLink
                             className="claim-source"
                             href={path(
                               locale,
@@ -193,7 +197,7 @@ export async function ComparisonPage({
                             )}
                           >
                             {t(locale, 'help')} <ArrowUpRight size={12} />
-                          </a>
+                          </AppLink>
                         </td>
                       </tr>
                     ))}
@@ -232,7 +236,7 @@ export async function ComparisonPage({
                   </li>
                 ))}
               </ol>
-              <a
+              <AppLink
                 className="button"
                 href={
                   path(locale, market, 'search') +
@@ -242,7 +246,7 @@ export async function ComparisonPage({
               >
                 {copy.example[locale]} ({countryName(locale, market)}):{' '}
                 {item.example} <ArrowRight size={18} />
-              </a>
+              </AppLink>
             </section>
             <section className="comparison-section comparison-faq">
               <div>
@@ -272,31 +276,34 @@ export async function ComparisonPage({
                 {Array.from(new Set(item.claims.map((x) => x.source))).map(
                   (source, i) => (
                     <li key={source}>
-                      <a href={source} rel="noopener">
+                      <AppLink href={source} rel="noopener">
                         {item.brand} · {copy.source[locale]} {i + 1}{' '}
                         <ArrowUpRight size={14} />
-                      </a>
+                      </AppLink>
                       <time dateTime={date}>{date}</time>
                     </li>
                   ),
                 )}
               </ul>
-              <a className="text-link" href={path(locale, market, 'data')}>
+              <AppLink
+                className="text-link"
+                href={path(locale, market, 'data')}
+              >
                 {t(locale, 'data')} <ArrowRight size={16} />
-              </a>
+              </AppLink>
             </section>
             <section className="comparison-section">
               <div className="editorial-section-head">
                 <h2>{copy.next[locale]}</h2>
-                <a href={comparisonPath(locale)}>
+                <AppLink href={comparisonPath(locale)}>
                   {copy.hub[locale]} <ArrowRight size={16} />
-                </a>
+                </AppLink>
               </div>
               <div className="comparison-grid">
                 {comparisons
                   .filter((x) => item.related.includes(x.id))
                   .map((x) => (
-                    <a
+                    <AppLink
                       className="comparison-card"
                       href={comparisonPath(locale, x.id)}
                       key={x.id}
@@ -305,12 +312,12 @@ export async function ComparisonPage({
                       <h3>{x.brand}</h3>
                       <p>{x.intro[locale]}</p>
                       <ArrowUpRight size={22} />
-                    </a>
+                    </AppLink>
                   ))}
               </div>
-              <a className="button primary" href="#title-search">
+              <AppLink className="button primary" href="#title-search">
                 {copy.searchButton[locale]} <ArrowRight size={18} />
-              </a>
+              </AppLink>
             </section>
           </>
         ) : (
@@ -321,7 +328,7 @@ export async function ComparisonPage({
             </div>
             <div className="comparison-grid">
               {comparisons.map((x, i) => (
-                <a
+                <AppLink
                   className="comparison-card"
                   href={comparisonPath(locale, x.id)}
                   key={x.id}
@@ -332,7 +339,7 @@ export async function ComparisonPage({
                   <h2>{x.brand}</h2>
                   <p>{x.intro[locale]}</p>
                   <ArrowUpRight size={24} />
-                </a>
+                </AppLink>
               ))}
             </div>
           </section>

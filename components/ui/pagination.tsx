@@ -2,6 +2,7 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { AppLink } from '@/ui/app-link';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -55,7 +56,7 @@ function PaginationLink({
       className={cn(className)}
       nativeButton={false}
       render={
-        <a
+        <AppLink
           aria-current={isActive ? 'page' : undefined}
           data-slot="pagination-link"
           data-active={isActive}

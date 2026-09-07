@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { Choice } from './select';
 import {
@@ -14,6 +15,19 @@ import type { Locale } from '@/i18n/config';
 import { languageNames, locales } from '@/i18n/config';
 import { t, type MessageKey } from '@/i18n/messages';
 import { trackEvent } from '@/lib/analytics';
+function initialValues(initial: Filters): Record<string, string> {
+  return {
+    type: initial.type || '',
+    provider: initial.provider || '',
+    genre: initial.genre || '',
+    offerType: initial.offerType || '',
+    quality: initial.quality || '',
+    audio: initial.audio || '',
+    subtitles: initial.subtitles || '',
+    maxMinutes: initial.maxMinutes ? String(initial.maxMinutes) : '',
+    sort: initial.sort || 'relevance',
+  };
+}
 export function FilterControls({
   locale,
   initial,
@@ -25,18 +39,15 @@ export function FilterControls({
   providers: Provider[];
   finder?: boolean;
 }) {
-  const [v, set] = useState<Record<string, string>>({
-    type: initial.type || '',
-    provider: initial.provider || '',
-    genre: initial.genre || '',
-    offerType: initial.offerType || '',
-    quality: initial.quality || '',
-    audio: initial.audio || '',
-    subtitles: initial.subtitles || '',
-    maxMinutes: initial.maxMinutes ? String(initial.maxMinutes) : '',
-    sort: initial.sort || 'relevance',
-  });
+  const [v, set] = useState(() => initialValues(initial));
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+  useEffect(() => {
+    // The same controls survive client-side navigation and browser history.
+    // Restore the server-approved URL filters instead of retaining old drafts.
+    set(initialValues(initial));
+    setOpen(false);
+  }, [initial]);
   function submit() {
     trackEvent('filter_apply', {
       selected_count: Object.entries(v).filter(
@@ -51,13 +62,11 @@ export function FilterControls({
       if (value) p.set(k, value);
       else p.delete(k);
     }
-    window.location.assign(
-      window.location.pathname + (p.size ? '?' + p.toString() : ''),
-    );
+    router.push(window.location.pathname + (p.size ? '?' + p.toString() : ''));
   }
   function reset() {
     trackEvent('filter_reset', { source: finder ? 'finder' : 'catalog' });
-    window.location.assign(
+    router.push(
       window.location.pathname +
         (initial.q ? '?q=' + encodeURIComponent(initial.q) : ''),
     );

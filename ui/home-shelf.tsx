@@ -1,4 +1,5 @@
 'use client';
+import { AppLink } from './app-link';
 import { useRef } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import type { Locale } from '@/i18n/config';
@@ -41,10 +42,10 @@ export function HomeShelf({
           {intro && <p className="muted">{intro}</p>}
         </div>
         <div className="shelf-actions">
-          <a className="text-link" href={href}>
+          <AppLink className="text-link" href={href}>
             {t(locale, 'browseAll')}
             <ArrowRight size={16} />
-          </a>
+          </AppLink>
           <button
             className="shelf-arrow"
             onClick={() => move(-1)}
