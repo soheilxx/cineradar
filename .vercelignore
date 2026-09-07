@@ -1,0 +1,15 @@
+.env*
+.local/
+.git/
+.next/
+.vinext/
+.wrangler/
+node_modules/
+dist/
+coverage/
+test-results/
+playwright-report/
+outputs/
+work/
+docs/evidence/
+*.tsbuildinfo
