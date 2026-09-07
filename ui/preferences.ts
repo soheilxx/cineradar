@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
+import { trackEvent } from '@/lib/analytics';
 const saved = z
   .array(
     z.object({
@@ -65,9 +66,24 @@ export function useSaved() {
       saved.parse(next);
       localStorage.setItem('cineradar:watchlist', JSON.stringify(next));
       set(next);
+      setError(false);
+      trackEvent(
+        next.length > current.length ? 'watchlist_add' : 'watchlist_remove',
+        {
+          title_id: id,
+          media_type: id.split(':')[0],
+          market,
+          item_count: next.filter((item) => item.market === market).length,
+        },
+      );
       window.dispatchEvent(new Event('cineradar:saved'));
     } catch {
       setError(true);
+      trackEvent('watchlist_error', {
+        title_id: id,
+        market,
+        error_code: 'storage_error',
+      });
     }
   }
   return { items, toggle, error };

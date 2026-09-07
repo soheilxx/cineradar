@@ -3,11 +3,22 @@ import { config } from '@/lib/config';
 import { equal, json } from '@/lib/security';
 import { db } from '@/data/db';
 import { tick } from '@/jobs/worker';
+import { publishSitemaps } from '@/seo/sitemap-publish';
 export const maxDuration = 300;
 export async function POST(req: Request) {
   const key = config().CRON_SECRET;
   if (!key || !equal(req.headers.get('authorization') || '', 'Bearer ' + key))
     return json({}, 401);
+  let sitemap:
+    | Awaited<ReturnType<typeof publishSitemaps>>
+    | { state: 'failed' };
+  try {
+    sitemap = await publishSitemaps();
+  } catch {
+    // A sitemap export failure retains the published generation and must not
+    // prevent the independent catalog worker or retention cleanup from running.
+    sitemap = { state: 'failed' };
+  }
   if (config().DATABASE_URL) {
     const database = await db();
     await database.query(
@@ -43,8 +54,8 @@ export async function POST(req: Request) {
     );
   }
   return json(
-    { scheduled: config().SYNC_ENABLED === 'true', completed, failed },
-    failed ? 503 : 200,
+    { scheduled: config().SYNC_ENABLED === 'true', completed, failed, sitemap },
+    failed || sitemap.state === 'failed' ? 503 : 200,
   );
 }
 export const GET = POST;

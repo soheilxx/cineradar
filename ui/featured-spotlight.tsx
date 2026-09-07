@@ -5,6 +5,7 @@ import { t } from '@/i18n/messages';
 import type { Locale } from '@/i18n/config';
 import { SaveButton } from './save-button';
 import { imageSet } from '@/domain/artwork';
+import { trackEvent } from '@/lib/analytics';
 export interface FeaturedTitle {
   id: string;
   title: string;
@@ -27,6 +28,16 @@ export function FeaturedSpotlight({
   const [active, setActive] = useState(0);
   const item = items[active];
   if (!item) return null;
+  function change(index: number, direction: string) {
+    setActive(index);
+    trackEvent('spotlight_change', {
+      title_id: items[index].id,
+      media_type: items[index].type,
+      position: index + 1,
+      direction,
+      market,
+    });
+  }
   return (
     <article className="spotlight">
       <img
@@ -51,14 +62,27 @@ export function FeaturedSpotlight({
       <div className="spotlight-copy">
         <p className="eyebrow">{item.genres}</p>
         <h2>
-          <a href={item.href}>{item.title}</a>
+          <a
+            href={item.href}
+            data-analytics-title-id={item.id}
+            data-analytics-source="spotlight"
+            data-analytics-position={active + 1}
+          >
+            {item.title}
+          </a>
         </h2>
         <p>
           {item.year} · {t(locale, item.type)}
         </p>
         <p className="spotlight-overview">{item.overview}</p>
         <div className="feature-actions">
-          <a className="button primary" href={item.href}>
+          <a
+            className="button primary"
+            href={item.href}
+            data-analytics-title-id={item.id}
+            data-analytics-source="spotlight"
+            data-analytics-position={active + 1}
+          >
             {t(locale, 'offers')}
             <ArrowUpRight size={18} />
           </a>
@@ -67,7 +91,9 @@ export function FeaturedSpotlight({
       </div>
       <nav className="spotlight-controls" aria-label={t(locale, 'trendingNow')}>
         <button
-          onClick={() => setActive((active + items.length - 1) % items.length)}
+          onClick={() =>
+            change((active + items.length - 1) % items.length, 'previous')
+          }
           aria-label={t(locale, 'previous')}
         >
           <ArrowLeft size={18} />
@@ -78,14 +104,14 @@ export function FeaturedSpotlight({
               key={entry.id}
               aria-label={entry.title}
               aria-pressed={active === index}
-              onClick={() => setActive(index)}
+              onClick={() => change(index, 'direct')}
             >
               <span />
             </button>
           ))}
         </div>
         <button
-          onClick={() => setActive((active + 1) % items.length)}
+          onClick={() => change((active + 1) % items.length, 'next')}
           aria-label={t(locale, 'next')}
         >
           <ArrowRight size={18} />

@@ -18,6 +18,8 @@ const envSchema = z.object({
   SAA_ENDPOINT_WEIGHT: z.coerce.number().int().positive().default(1),
   BUDGET_BUFFER: z.coerce.number().min(0).max(0.9).default(0.2),
   SYNC_ENABLED: z.enum(['true', 'false']).default('false'),
+  GA4_ENABLED: z.enum(['true', 'false']).default('false'),
+  GA4_DEBUG: z.enum(['true', 'false']).default('false'),
   ADMIN_KEY: z.string().optional(),
   SESSION_SECRET: z.string().optional(),
   CRON_SECRET: z.string().optional(),
@@ -99,6 +101,13 @@ export function config(
     throw new Error('Missing configuration: ' + missing.join(', '));
   return {
     ...c,
+    analyticsEnabled:
+      (c.GA4_ENABLED === 'true' &&
+        c.APP_MODE === 'live' &&
+        c.DEPLOYMENT_ENV === 'production') ||
+      (c.GA4_DEBUG === 'true' &&
+        c.DEPLOYMENT_ENV === 'local' &&
+        ['localhost', '127.0.0.1'].includes(new URL(c.SITE_URL).hostname)),
     markets: c.ENABLED_MARKETS.toLowerCase()
       .split(',')
       .filter((x) => /^[a-z]{2}$/.test(x)),

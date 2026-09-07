@@ -24,11 +24,13 @@ export function PosterCard({
   locale,
   market,
   index = 0,
+  position,
 }: {
   item: CatalogItem | CardItem;
   locale: Locale;
   market: string;
   index?: number;
+  position?: number;
 }) {
   const card = 'slug' in item ? item : catalogCard(item, locale);
   const title = card.title;
@@ -43,6 +45,9 @@ export function PosterCard({
           href={titlePath(item, locale, market)}
           aria-label={title}
           className="poster-link"
+          data-analytics-title-id={card.id}
+          data-analytics-media-type={card.type}
+          data-analytics-position={position ?? index + 1}
         >
           {card.poster ? (
             <Artwork
@@ -73,7 +78,12 @@ export function PosterCard({
           </span>
         )}
       </div>
-      <a href={titlePath(item, locale, market)}>
+      <a
+        href={titlePath(item, locale, market)}
+        data-analytics-title-id={card.id}
+        data-analytics-media-type={card.type}
+        data-analytics-position={position ?? index + 1}
+      >
         <h3>{title}</h3>
       </a>
       <p className="card-meta">

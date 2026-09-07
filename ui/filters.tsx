@@ -13,6 +13,7 @@ import type { Filters, Provider } from '@/domain/types';
 import type { Locale } from '@/i18n/config';
 import { languageNames, locales } from '@/i18n/config';
 import { t, type MessageKey } from '@/i18n/messages';
+import { trackEvent } from '@/lib/analytics';
 export function FilterControls({
   locale,
   initial,
@@ -37,6 +38,13 @@ export function FilterControls({
   });
   const [open, setOpen] = useState(false);
   function submit() {
+    trackEvent('filter_apply', {
+      selected_count: Object.entries(v).filter(
+        ([key, value]) => key !== 'sort' && value,
+      ).length,
+      sort: v.sort,
+      source: finder ? 'finder' : 'catalog',
+    });
     const p = new URLSearchParams(window.location.search);
     p.delete('page');
     for (const [k, value] of Object.entries(v)) {
@@ -48,6 +56,7 @@ export function FilterControls({
     );
   }
   function reset() {
+    trackEvent('filter_reset', { source: finder ? 'finder' : 'catalog' });
     window.location.assign(
       window.location.pathname +
         (initial.q ? '?q=' + encodeURIComponent(initial.q) : ''),
@@ -63,7 +72,15 @@ export function FilterControls({
       label={t(locale, label)}
       value={v[name]}
       options={options}
-      onChange={(value) => set({ ...v, [name]: value })}
+      onChange={(value) => {
+        if (!options.some((option) => option.value === value)) return;
+        set({ ...v, [name]: value });
+        trackEvent('filter_change', {
+          filter_name: name,
+          filter_value: value || 'all',
+          source: finder ? 'finder' : 'catalog',
+        });
+      }}
     />
   );
   const all = { value: '', label: t(locale, 'all') };
@@ -130,7 +147,7 @@ export function FilterControls({
       {select(
         'sort',
         'sort',
-        (['relevance', 'latest', 'trending', 'title', 'year'] as const).map(
+        (['relevance', 'trending', 'latest', 'title', 'year'] as const).map(
           (value) => ({
             value,
             label: t(

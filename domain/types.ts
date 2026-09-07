@@ -44,6 +44,8 @@ export interface Title {
   genres: Genre[];
   rating: number | null;
   votes: number;
+  popularity?: number;
+  popularityUpdatedAt?: string;
   cast: string[];
   seasons: { number: number; name: string; episodes: number | null }[];
   localizations: Record<Locale, Localization>;

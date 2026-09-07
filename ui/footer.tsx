@@ -4,7 +4,10 @@ import { t } from '@/i18n/messages';
 import type { Locale } from '@/i18n/config';
 import { l } from '@/content/comparisons/copy';
 import { comparisonPath } from '@/content/comparisons/routes';
+import { config } from '@/lib/config';
+import { ConsentSettingsButton } from './analytics-consent';
 export function Footer({ locale, market }: { locale: Locale; market: string }) {
+  const analyticsEnabled = config().analyticsEnabled;
   const labels = {
     discover: l('Entdecken', 'Découvrir', 'Scopri', 'Descubrir', 'Discover'),
     service: l(
@@ -69,6 +72,7 @@ export function Footer({ locale, market }: { locale: Locale; market: string }) {
                 {t(locale, k)}
               </a>
             ))}
+            {analyticsEnabled && <ConsentSettingsButton locale={locale} />}
           </nav>
         </div>
         <div className="footer-colophon">

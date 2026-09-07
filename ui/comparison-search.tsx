@@ -14,6 +14,7 @@ import { copy } from '@/content/comparisons/copy';
 import { Search } from './search';
 import { Header } from './header';
 import { Choice } from './select';
+import { trackEvent } from '@/lib/analytics';
 function useMarket(locale: Locale, markets: string[]) {
   const [market, setMarket] = useState(defaultMarkets[locale]);
   useEffect(() => {
@@ -66,14 +67,6 @@ export function ComparisonSearch({
   markets: string[];
 }) {
   const { market, setMarket } = useMarket(locale, markets);
-  useEffect(() => {
-    if (id)
-      window.dispatchEvent(
-        new CustomEvent('cineradar:analytics', {
-          detail: { event: 'comparison_view', comparison: id },
-        }),
-      );
-  }, [id]);
   return (
     <div className="comparison-search" id="title-search">
       <label className="comparison-search-label" htmlFor="comparison-title">
@@ -85,12 +78,10 @@ export function ComparisonSearch({
         inputId="comparison-title"
         buttonLabel={copy.searchButton[locale]}
         onSearch={() => {
-          if (id)
-            window.dispatchEvent(
-              new CustomEvent('cineradar:analytics', {
-                detail: { event: 'comparison_search_submit', comparison: id },
-              }),
-            );
+          trackEvent('comparison_search_submit', {
+            comparison_id: id || 'hub',
+            market,
+          });
         }}
       />
       <Choice
@@ -102,6 +93,11 @@ export function ComparisonSearch({
         }))}
         onChange={(value) => {
           setMarket(value);
+          trackEvent('context_change', {
+            filter_name: 'market',
+            filter_value: value,
+            source: 'comparison',
+          });
           document.cookie = `cr_context=${locale}.${value}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
           window.dispatchEvent(new Event('cineradar:context'));
         }}

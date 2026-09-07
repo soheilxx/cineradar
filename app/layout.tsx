@@ -1,8 +1,14 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+import { Suspense } from 'react';
+import { config } from '@/lib/config';
+import { isLocale } from '@/i18n/config';
+import { Analytics } from '@/ui/analytics';
+import { AnalyticsConsent } from '@/ui/analytics-consent';
 import './globals.css';
 import './experience.css';
 import './editorial.css';
+import './analytics.css';
 export const metadata: Metadata = {
   icons: { icon: '/icon.svg', apple: '/apple-touch-icon.png' },
   title: 'Cineradar · Find your next movie night',
@@ -15,7 +21,10 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const language = (await headers()).get('x-cineradar-locale') || 'en';
+  const h = await headers();
+  const languageHeader = h.get('x-cineradar-locale') || 'en';
+  const language = isLocale(languageHeader) ? languageHeader : 'en';
+  const c = config();
   return (
     <html lang={language} className="dark">
       <head>
@@ -28,7 +37,17 @@ export default async function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Suspense fallback={null}>
+          <Analytics
+            enabled={c.analyticsEnabled}
+            nonce={h.get('x-nonce') || undefined}
+            debug={c.GA4_DEBUG === 'true' && c.DEPLOYMENT_ENV === 'local'}
+          />
+        </Suspense>
+        <AnalyticsConsent locale={language} enabled={c.analyticsEnabled} />
+      </body>
     </html>
   );
 }

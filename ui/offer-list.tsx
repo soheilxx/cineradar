@@ -6,6 +6,7 @@ import { lowestPrices, activeOffers } from '@/domain/offers';
 import { t } from '@/i18n/messages';
 import { type Locale, languageNames } from '@/i18n/config';
 import { Choice } from './select';
+import { trackEvent } from '@/lib/analytics';
 export function OfferList({
   offers,
   locale,
@@ -43,13 +44,26 @@ export function OfferList({
       label,
     })),
   ];
+  function changeFilter(
+    name: string,
+    value: string,
+    update: (value: string) => void,
+  ) {
+    update(value);
+    trackEvent('offer_filter_change', {
+      title_id: offers[0]?.titleId,
+      market: offers[0]?.market,
+      filter_name: name,
+      filter_value: value || 'all',
+    });
+  }
   return (
     <>
       <div className="offer-toolbar">
         <Choice
           label={t(locale, 'offerType')}
           value={type}
-          onChange={setType}
+          onChange={(value) => changeFilter('offer_type', value, setType)}
           options={[
             all,
             ...(['subscription', 'addon', 'free', 'rent', 'buy'] as const).map(
@@ -60,7 +74,7 @@ export function OfferList({
         <Choice
           label={t(locale, 'quality')}
           value={quality}
-          onChange={setQuality}
+          onChange={(value) => changeFilter('quality', value, setQuality)}
           options={[
             all,
             ...['sd', 'hd', 'qhd', 'uhd'].map((value) => ({
@@ -72,20 +86,20 @@ export function OfferList({
         <Choice
           label={t(locale, 'audio')}
           value={audio}
-          onChange={setAudio}
+          onChange={(value) => changeFilter('audio', value, setAudio)}
           options={languageOptions}
         />
         <Choice
           label={t(locale, 'subtitles')}
           value={subs}
-          onChange={setSubs}
+          onChange={(value) => changeFilter('subtitles', value, setSubs)}
           options={languageOptions}
         />
         {seasonMode && (
           <Choice
             label={t(locale, 'seasons')}
             value={season}
-            onChange={setSeason}
+            onChange={(value) => changeFilter('season', value, setSeason)}
             options={[
               { value: '', label: t(locale, 'seriesUnit') },
               ...Array.from(
@@ -198,6 +212,15 @@ export function OfferList({
               target="_blank"
               rel="noopener noreferrer"
               title={t(locale, 'external')}
+              data-analytics-title-id={o.titleId}
+              data-analytics-provider-id={o.provider.id}
+              data-analytics-offer-type={o.type}
+              data-analytics-quality={o.quality || undefined}
+              data-analytics-currency={o.currency || undefined}
+              data-analytics-value={o.price || undefined}
+              data-analytics-season-number={o.season ?? undefined}
+              data-analytics-episode-number={o.episode ?? undefined}
+              data-analytics-unit={o.unit}
             >
               {t(locale, 'openProvider')}
               <ArrowUpRight size={17} />
@@ -217,6 +240,10 @@ export function OfferList({
               setSubs('');
               setQuality('');
               setSeason('');
+              trackEvent('offer_filter_reset', {
+                title_id: offers[0]?.titleId,
+                market: offers[0]?.market,
+              });
             }}
           >
             {t(locale, 'reset')}

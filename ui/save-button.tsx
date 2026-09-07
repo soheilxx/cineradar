@@ -26,6 +26,8 @@ export function SaveButton({
         onClick={() => toggle(id, market)}
         aria-label={t(locale, active ? 'remove' : 'save')}
         aria-pressed={active}
+        data-analytics-control="watchlist_toggle"
+        data-analytics-title-id={id}
       >
         {active ? <Check size={19} /> : <Bookmark size={19} />}{' '}
         {!compact && t(locale, active ? 'saved' : 'save')}

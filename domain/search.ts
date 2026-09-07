@@ -1,4 +1,4 @@
-import type { CatalogItem, Filters } from './types';
+import type { CatalogItem, Filters, Title } from './types';
 import type { Locale } from '../i18n/config';
 import { activeOffers, inSubscriptions } from './offers';
 export function fold(s: string) {
@@ -19,19 +19,21 @@ export function parseSearchQuery(query: string) {
     ? { q: match[1].trim(), year: Number(match[2] || match[3]) }
     : { q, year: null };
 }
-function distance(a: string, b: string) {
-  let row = Array.from({ length: b.length + 1 }, (_, i) => i);
-  for (let i = 1; i <= a.length; i++) {
-    const next = [i];
-    for (let j = 1; j <= b.length; j++)
-      next[j] = Math.min(
-        next[j - 1] + 1,
-        row[j] + 1,
-        row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+function trigrams(value: string) {
+  return new Set(
+    value.split(' ').flatMap((word) => {
+      const padded = `  ${word} `;
+      return Array.from({ length: padded.length - 2 }, (_, i) =>
+        padded.slice(i, i + 3),
       );
-    row = next;
-  }
-  return row[b.length];
+    }),
+  );
+}
+function similarity(a: string, b: string) {
+  const left = trigrams(a),
+    right = trigrams(b);
+  const common = [...left].filter((part) => right.has(part)).length;
+  return common / (left.size + right.size - common || 1);
 }
 export function searchScore(query: string, item: CatalogItem, locale: Locale) {
   const q = fold(parseSearchQuery(query).q);
@@ -42,25 +44,92 @@ export function searchScore(query: string, item: CatalogItem, locale: Locale) {
     ...Object.values(item.title.localizations).map((x) => x.title),
   ];
   return Math.max(
-    ...names.map((n, i) => {
+    ...names.map((n) => {
       const f = fold(n);
       return f === q
-        ? 100 - i
+        ? 4
         : f.startsWith(q)
-          ? 80 - i
-          : f.includes(q)
-            ? 60 - i
-            : distance(f, q) <= Math.max(1, Math.floor(q.length * 0.18))
-              ? 30
+          ? 3
+          : f.includes(q) ||
+              q.split(' ').every((word) => f.split(' ').includes(word))
+            ? 2
+            : similarity(f, q) > 0.35
+              ? 1
               : 0;
     }),
   );
+}
+// TMDB popularity and provider trends express interest, not verified stream counts.
+// Votes keep older imports useful; a bounded trend bonus cannot swamp title relevance.
+export function prominenceScore(
+  title: Title,
+  trendIndex = -1,
+  now = Date.now(),
+) {
+  const updated = Date.parse(title.popularityUpdatedAt || '');
+  const popularity =
+    Number.isFinite(updated) && updated <= now && updated > now - 7 * 86400000
+      ? Math.max(0, title.popularity || 0)
+      : 0;
+  return (
+    Math.log1p(Math.max(0, title.votes || 0)) +
+    0.5 * Math.log1p(popularity) +
+    (trendIndex >= 0 ? 2 / (trendIndex + 1) : 0)
+  );
+}
+export function compareCatalog(
+  a: CatalogItem,
+  b: CatalogItem,
+  locale: Locale,
+  f: Filters,
+  discoveryIds: string[] = [],
+  now = Date.now(),
+) {
+  const stable = () => a.title.id.localeCompare(b.title.id);
+  const year = () => (b.title.year || 0) - (a.title.year || 0);
+  const rank = (item: CatalogItem) => {
+    const index = discoveryIds.indexOf(item.title.id);
+    return index < 0 ? Number.MAX_SAFE_INTEGER : index;
+  };
+  if (f.sort === 'title')
+    return (
+      a.title.localizations[locale].title.localeCompare(
+        b.title.localizations[locale].title,
+        locale,
+      ) || stable()
+    );
+  if (f.sort === 'year') return year() || stable();
+  if (f.sort === 'latest')
+    return (
+      rank(a) - rank(b) || year() || b.title.votes - a.title.votes || stable()
+    );
+  const relevance = f.q
+    ? searchScore(f.q, b, locale) - searchScore(f.q, a, locale)
+    : 0;
+  if (relevance) return relevance;
+  if (f.sort === 'trending') {
+    const trend = rank(a) - rank(b);
+    if (trend) return trend;
+  }
+  if (f.q || f.sort === 'trending')
+    return (
+      prominenceScore(b.title, discoveryIds.indexOf(b.title.id), now) -
+        prominenceScore(a.title, discoveryIds.indexOf(a.title.id), now) ||
+      b.title.votes - a.title.votes ||
+      stable()
+    );
+  const available = (item: CatalogItem) =>
+    Number(activeOffers(item.snapshot.offers, now).length > 0);
+  const rating = (item: CatalogItem) =>
+    ((item.title.rating || 0) * item.title.votes) / (item.title.votes + 500);
+  return available(b) - available(a) || rating(b) - rating(a) || stable();
 }
 export function filterCatalog(
   items: CatalogItem[],
   locale: Locale,
   f: Filters,
   now = Date.now(),
+  discoveryIds: string[] = [],
 ) {
   const year = f.year || parseSearchQuery(f.q || '').year;
   return items
@@ -103,16 +172,5 @@ export function filterCatalog(
         (!requires || offers.length > 0)
       );
     })
-    .sort((a, b) =>
-      f.sort === 'title'
-        ? a.title.localizations[locale].title.localeCompare(
-            b.title.localizations[locale].title,
-            locale,
-          )
-        : f.sort === 'year'
-          ? (b.title.year || 0) - (a.title.year || 0)
-          : f.q
-            ? searchScore(f.q, b, locale) - searchScore(f.q, a, locale)
-            : 0,
-    );
+    .sort((a, b) => compareCatalog(a, b, locale, f, discoveryIds, now));
 }

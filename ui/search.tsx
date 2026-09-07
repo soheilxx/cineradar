@@ -11,6 +11,7 @@ import {
 import { t } from '@/i18n/messages';
 import { path } from '@/i18n/routes';
 import type { Locale } from '@/i18n/config';
+import { trackEvent } from '@/lib/analytics';
 import { useHydrated } from './use-hydrated';
 interface Suggestion {
   id: string;
@@ -40,6 +41,12 @@ export function Search({
   const seq = useRef(0);
   const ready = useHydrated();
   function submitSearch() {
+    trackEvent('search_submit', {
+      locale,
+      market,
+      query_length: query.trim().length,
+      result_count: items.length,
+    });
     onSearch?.();
     window.location.assign(
       path(locale, market, 'search') + '?q=' + encodeURIComponent(query),
@@ -60,9 +67,29 @@ export function Search({
           { signal: controller.signal },
         );
         const d = (await r.json()) as { items: Suggestion[] };
-        if (seq.current === n) setItems(r.ok ? d.items : []);
+        if (seq.current === n) {
+          setItems(r.ok ? d.items : []);
+          trackEvent(
+            r.ok ? 'search_suggestions_view' : 'search_suggestions_error',
+            {
+              locale,
+              market,
+              query_length: query.trim().length,
+              result_count: r.ok ? d.items.length : 0,
+              error_code: r.ok ? undefined : 'http_error',
+            },
+          );
+        }
       } catch {
-        if (seq.current === n) setItems([]);
+        if (seq.current === n && !controller.signal.aborted) {
+          setItems([]);
+          trackEvent('search_suggestions_error', {
+            locale,
+            market,
+            query_length: query.trim().length,
+            error_code: 'network_error',
+          });
+        }
       } finally {
         if (seq.current === n) setBusy(false);
       }
@@ -98,6 +125,15 @@ export function Search({
         itemToStringLabel={(x) => x.label}
         onValueChange={(value) => {
           if (value) {
+            trackEvent('search_suggestion_select', {
+              locale,
+              market,
+              query_length: query.trim().length,
+              result_count: items.length,
+              title_id: value.id,
+              media_type: value.type,
+              position: items.findIndex((item) => item.id === value.id) + 1,
+            });
             onSearch?.();
             window.location.assign(value.href);
           }

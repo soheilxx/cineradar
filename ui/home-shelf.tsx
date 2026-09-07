@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import type { Locale } from '@/i18n/config';
 import { t } from '@/i18n/messages';
+import { trackEvent } from '@/lib/analytics';
 export function HomeShelf({
   title,
   intro,
@@ -19,13 +20,18 @@ export function HomeShelf({
   const rail = useRef<HTMLDivElement>(null);
   function move(direction: number) {
     const element = rail.current;
-    if (element)
+    if (element) {
       element.scrollBy({
         left: direction * element.clientWidth * 0.85,
         behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
           ? 'instant'
           : 'smooth',
       });
+      trackEvent('shelf_scroll', {
+        direction: direction < 0 ? 'previous' : 'next',
+        source: 'home_shelf',
+      });
+    }
   }
   return (
     <section className="section home-shelf">

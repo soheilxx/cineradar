@@ -41,6 +41,8 @@ import { HomeShelf } from './home-shelf';
 import { FeaturedSpotlight } from './featured-spotlight';
 import { imageVariant, imageSet } from '@/domain/artwork';
 import { fold } from '@/domain/search';
+import { analyticsPrivacyCopy } from '@/content/analytics';
+import { ConsentSettingsButton } from './analytics-consent';
 export function PageHeading({
   locale: _locale,
   title,
@@ -412,7 +414,16 @@ export function ListingPage({
           initial={filters}
           finder={route === 'finder'}
         />
-        <section>
+        <section
+          data-analytics-search-results={
+            route === 'search' ? 'true' : undefined
+          }
+          data-analytics-query-length={
+            route === 'search' ? searchQuery.length : undefined
+          }
+          data-analytics-result-count={route === 'search' ? total : undefined}
+          data-analytics-page-number={page}
+        >
           <div className="results-heading">
             <span>{t(locale, 'results', { count: total })}</span>
             {route === 'finder' && (
@@ -508,7 +519,12 @@ export function DetailPage({
         <span>/</span>
         <span>{l.title}</span>
       </nav>
-      <section className="detail-hero">
+      <section
+        className="detail-hero"
+        data-analytics-view-title="true"
+        data-analytics-title-id={d.id}
+        data-analytics-media-type={d.type}
+      >
         {d.backdrop && (
           <img
             className="detail-backdrop"
@@ -811,6 +827,9 @@ export function InfoPage({
                   t(locale, route as MessageKey)}
               </a>
             ))}
+            {route === 'privacy' && c.analyticsEnabled && (
+              <a href="#analytics">{analyticsPrivacyCopy.heading[locale]}</a>
+            )}
           </nav>
           <nav>
             {(['about', 'help', 'data', 'contact', 'legal', 'privacy'] as const)
@@ -832,6 +851,40 @@ export function InfoPage({
               <p>{t(locale, k)}</p>
             </section>
           ))}
+          {route === 'privacy' && c.analyticsEnabled && (
+            <section className="info-section" id="analytics">
+              <h2>{analyticsPrivacyCopy.heading[locale]}</h2>
+              {(
+                [
+                  'consent',
+                  'data',
+                  'provider',
+                  'cookies',
+                  'withdrawal',
+                ] as const
+              ).map((key) => (
+                <p key={key}>{analyticsPrivacyCopy[key][locale]}</p>
+              ))}
+              <p>
+                <a
+                  className="text-link"
+                  href={`https://policies.google.com/privacy?hl=${locale}`}
+                  rel="noopener noreferrer"
+                >
+                  Google · {t(locale, 'privacy')}
+                </a>
+                {' · '}
+                <a
+                  className="text-link"
+                  href={`https://support.google.com/analytics/answer/12017362?hl=${locale}`}
+                  rel="noopener noreferrer"
+                >
+                  Google Analytics
+                </a>
+              </p>
+              <ConsentSettingsButton locale={locale} />
+            </section>
+          )}
           {['legal', 'privacy'].includes(route) && c.OPERATOR_NAME && (
             <address className="operator-address">
               {c.OPERATOR_NAME}

@@ -2,7 +2,7 @@ import { redirect, notFound } from 'next/navigation';
 import { isLocale } from '@/i18n/config';
 import { headers, cookies } from 'next/headers';
 import { config } from '@/lib/config';
-import { visitorContext } from '@/lib/visitor-context';
+import { visitorContext, visitorCountry } from '@/lib/visitor-context';
 import { comparisonRoute } from '@/content/comparisons/routes';
 import { ComparisonPage } from '@/ui/comparison-page';
 import { comparisonMetadata } from '@/seo/comparisons';
@@ -29,10 +29,14 @@ export default async function LocalePage({
     markets: config().markets,
     saved: (await cookies()).get('cr_context')?.value,
     languages: h.get('accept-language'),
-    country:
+    country: visitorCountry(
+      h,
       process.env.VERCEL === '1'
-        ? h.get('x-vercel-ip-country')
-        : h.get('cf-ipcountry'),
+        ? 'vercel'
+        : process.env.CF_PAGES === '1'
+          ? 'cloudflare'
+          : 'other',
+    ),
   });
   redirect(`/${locale}/${context.market}/`);
 }

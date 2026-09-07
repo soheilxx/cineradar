@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { t, type MessageKey } from '@/i18n/messages';
 import type { Locale } from '@/i18n/config';
 import { fold } from '@/domain/search';
+import { trackEvent } from '@/lib/analytics';
 
 type SearchState = 'queued' | 'running' | 'complete' | 'deferred' | 'failed';
 type SearchStatus = {
@@ -87,6 +88,18 @@ export function SearchMore({
     const controller = new AbortController();
     let deadline: ReturnType<typeof setTimeout> | undefined;
     const update = (next: SearchStatus) => {
+      if (
+        stored?.state !== next.state ||
+        stored?.resultsAvailable !== next.resultsAvailable
+      ) {
+        trackEvent('search_more_status', {
+          locale,
+          market,
+          query_length: query.trim().length,
+          status: next.state,
+          results_available: !!next.resultsAvailable,
+        });
+      }
       stored = { ...stored, ...next };
       saveStored(key, stored);
       setState(next.state);
@@ -128,7 +141,11 @@ export function SearchMore({
           }
           if (typeof result.statusKey === 'string')
             statusKey = result.statusKey;
-          update({ state: result.state, ...(statusKey ? { statusKey } : {}) });
+          update({
+            state: result.state,
+            resultsAvailable: result.resultsAvailable,
+            ...(statusKey ? { statusKey } : {}),
+          });
           if (
             result.state === 'complete' ||
             (result.state === 'deferred' && result.resultsAvailable)
@@ -168,6 +185,13 @@ export function SearchMore({
     const kickoff = setTimeout(() => {
       if (!saveStored(key, stored || { state: 'queued' }) && attempt === 0)
         return;
+      trackEvent('search_more_start', {
+        locale,
+        market,
+        query_length: query.trim().length,
+        trigger: attempt === 0 ? 'automatic' : 'manual',
+        source: stored?.statusKey ? 'status_check' : 'title_discovery',
+      });
       setState('queued');
       deadline = setTimeout(() => {
         update({ state: 'deferred' });

@@ -8,6 +8,18 @@ const nextConfig: NextConfig = {
   trailingSlash: false,
   skipTrailingSlashRedirect: true,
   poweredByHeader: false,
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/sitemap-:artifact([a-z0-9-]+).xml',
+          destination: '/sitemaps/artifact?file=:artifact',
+        },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
 };
 
 export default nextConfig;

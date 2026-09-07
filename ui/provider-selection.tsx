@@ -15,6 +15,7 @@ import { path } from '@/i18n/routes';
 import type { Locale } from '@/i18n/config';
 import type { Provider } from '@/domain/types';
 import { readProviders } from './preferences';
+import { trackEvent } from '@/lib/analytics';
 export function ProviderSelection({
   providers,
   locale,
@@ -40,9 +41,21 @@ export function ProviderSelection({
         JSON.stringify(next),
       );
       setSelection(next);
+      setError(false);
+      trackEvent('provider_selection_change', {
+        provider_id: key.split(':')[0],
+        selected: next.includes(key),
+        selected_count: next.length,
+        source: key.includes(':') ? 'addon' : 'provider',
+        market,
+      });
       window.dispatchEvent(new Event('cineradar:providers'));
     } catch {
       setError(true);
+      trackEvent('provider_selection_error', {
+        market,
+        error_code: 'storage_error',
+      });
     }
   }
   const controls = (
@@ -119,7 +132,16 @@ export function ProviderSelection({
             </button>
           ))}
       </div>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          trackEvent(next ? 'provider_dialog_open' : 'provider_dialog_close', {
+            market,
+            selected_count: selection.length,
+          });
+        }}
+      >
         <DialogTrigger
           className="button provider-manage"
           aria-label={t(locale, 'manage')}

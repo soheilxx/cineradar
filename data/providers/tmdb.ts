@@ -19,6 +19,7 @@ const detail = z.object({
   genres: z.array(z.object({ id: z.number(), name: z.string() })).default([]),
   vote_average: z.number().default(0),
   vote_count: z.number().default(0),
+  popularity: z.number().nonnegative().optional(),
   credits: z
     .object({ cast: z.array(z.object({ name: z.string() })) })
     .optional(),
@@ -161,6 +162,12 @@ export class TMDB {
       genres: d.genres.map((x) => genreIds[x.id]).filter(Boolean),
       rating: d.vote_count > 0 ? d.vote_average : null,
       votes: d.vote_count,
+      ...(d.popularity === undefined
+        ? {}
+        : {
+            popularity: d.popularity,
+            popularityUpdatedAt: new Date().toISOString(),
+          }),
       cast: d.credits?.cast.slice(0, 8).map((x) => x.name) || [],
       seasons:
         d.seasons

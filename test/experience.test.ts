@@ -7,7 +7,7 @@ import { streamingContent, meaningfulTitle } from '../seo/content';
 import { catalogCard } from '../domain/cards';
 import { filterSchema } from '../lib/catalog-filters';
 
-test('Visitor routing respects saved choices, weighted language and US English default', () => {
+test('Visitor routing respects saved choices, country first and US English fallback', () => {
   const base = { markets: [...markets] };
   assert.deepEqual(
     visitorContext({
@@ -15,11 +15,11 @@ test('Visitor routing respects saved choices, weighted language and US English d
       languages: 'fr-FR;q=0.5,de-DE;q=0.9,en;q=0.1',
       country: 'FR',
     }),
-    { locale: 'de', market: 'fr' },
+    { locale: 'fr', market: 'fr' },
   );
   assert.deepEqual(
     visitorContext({ ...base, languages: 'en-GB,en;q=0.9', country: 'DE' }),
-    { locale: 'en', market: 'us' },
+    { locale: 'de', market: 'de' },
   );
   assert.equal(defaultMarkets.en, 'us');
   assert.deepEqual(

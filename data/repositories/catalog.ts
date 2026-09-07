@@ -14,11 +14,11 @@ import type {
   Snapshot,
   Change,
 } from '../../domain/types';
-import { db } from '../db';
+import { db, type Database } from '../db';
 import { publicCache } from '../cache';
 import { config } from '../../lib/config';
 import { emptySnapshot, freshness } from '../../domain/offers';
-import { filterCatalog, parseSearchQuery } from '../../domain/search';
+import { filterCatalog, fold, parseSearchQuery } from '../../domain/search';
 import type { Locale } from '../../i18n/config';
 const compiler = new Kysely<Record<string, never>>({
   dialect: {
@@ -75,11 +75,12 @@ export async function catalog(
     () => loadCatalog(locale, market, f, limit),
   );
 }
-async function loadCatalog(
+export async function loadCatalog(
   locale: Locale,
   market: string,
   f: Filters = {},
   limit = 24,
+  database?: Database,
 ): Promise<{ items: CatalogItem[]; total: number; unavailable: boolean }> {
   const c = config();
   if (c.APP_MODE === 'fixture') {
@@ -99,7 +100,17 @@ async function loadCatalog(
     const rawQuery = (f.q || '').trim().slice(0, 120);
     const parsedSearch = parseSearchQuery(rawQuery);
     const year = f.year || parsedSearch.year;
-    const q = parsedSearch.q;
+    const q = fold(parsedSearch.q);
+    const connection = database || (await db());
+    const matchRank = q
+      ? sql`COALESCE((SELECT max(CASE
+      WHEN name=${q} THEN 4
+      WHEN starts_with(name,${q}) THEN 3
+      WHEN strpos(name,${q})>0 OR to_tsvector('simple',name) @@ plainto_tsquery('simple',${q}) THEN 2
+      WHEN similarity(name,${q})>0.35 THEN 1 ELSE 0 END)
+      FROM (SELECT trim(regexp_replace(unaccent(lower(alt.title)),'[^[:alnum:]]+',' ','g')) AS name FROM localizations alt WHERE alt.title_id=t.id
+        UNION ALL SELECT trim(regexp_replace(unaccent(lower(t.data->>'originalTitle')),'[^[:alnum:]]+',' ','g'))) names),0)`
+      : sql`0::integer`;
     const conditions = [sql`true`];
     if (f.type) conditions.push(sql`t.media_type=${f.type}`);
     if (f.genre) conditions.push(sql`t.data->'genres' ? ${f.genre}`);
@@ -108,10 +119,7 @@ async function loadCatalog(
         sql`t.media_type='movie' AND (t.data->>'runtime')::int <= ${f.maxMinutes}`,
       );
     if (year) conditions.push(sql`(t.data->>'year')::int=${year}`);
-    if (q)
-      conditions.push(
-        sql`(l.search_document @@ websearch_to_tsquery('simple',${q}) OR unaccent(lower(l.title)) LIKE '%'||unaccent(lower(${q}))||'%' OR similarity(unaccent(lower(l.title)),unaccent(lower(${q})))>0.35 OR unaccent(lower(t.data->>'originalTitle')) LIKE '%'||unaccent(lower(${q}))||'%' OR EXISTS(SELECT 1 FROM localizations alt WHERE alt.title_id=t.id AND unaccent(lower(alt.title))=unaccent(lower(${q}))))`,
-      );
+    if (q) conditions.push(sql`${matchRank}>0`);
     const oc = [
       sql`o.title_id=t.id`,
       sql`o.market=${market}`,
@@ -138,10 +146,8 @@ async function loadCatalog(
         sql`EXISTS(SELECT 1 FROM offers o WHERE ${sql.join(oc, sql` AND `)})`,
       );
     let discoveryIds: string[] = [];
-    if (f.sort === 'latest' || f.sort === 'trending') {
-      const ranking = await (
-        await db()
-      ).query<{ data: { ids: string[] } }>(
+    if (q || f.sort === 'latest' || f.sort === 'trending') {
+      const ranking = await connection.query<{ data: { ids: string[] } }>(
         "SELECT data FROM operations WHERE key LIKE $1 AND updated_at>now()-interval '7 days' ORDER BY (data->>'page')::int,key",
         [
           `ranking:${market}:${f.type || '%'}:${f.sort === 'latest' ? 'release_date' : 'popularity_1week'}:%`,
@@ -159,23 +165,29 @@ async function loadCatalog(
         ).flat();
       }
     }
+    const trendRank = sql`array_position(${discoveryIds}::text[],t.id)`;
+    const votes = sql`greatest(COALESCE((t.data->>'votes')::numeric,0),0)`;
+    const popularity = sql`CASE WHEN (t.data->>'popularityUpdatedAt')::timestamptz>now()-interval '7 days' AND (t.data->>'popularityUpdatedAt')::timestamptz<=now() THEN greatest(COALESCE((t.data->>'popularity')::numeric,0),0) ELSE 0 END`;
+    const prominence = sql`ln(1+${votes})+0.5*ln(1+${popularity})+COALESCE(2.0/${trendRank},0)`;
     const order =
       f.sort === 'title'
         ? sql`l.title ASC,t.id ASC`
-        : f.sort === 'latest' || f.sort === 'trending'
-          ? sql`array_position(${discoveryIds}::text[],t.id) ASC NULLS LAST,(t.data->>'year')::int DESC NULLS LAST,(t.data->>'votes')::int DESC,t.id`
-          : f.sort === 'year'
-            ? sql`(t.data->>'year')::int DESC NULLS LAST,t.id ASC`
-            : q
-              ? sql`CASE WHEN lower(l.title)=lower(${q}) THEN 0 ELSE 1 END,t.updated_at DESC,t.id ASC`
-              : sql`CASE WHEN EXISTS(SELECT 1 FROM offers available WHERE available.title_id=t.id AND available.market=${market} AND (available.expires_at IS NULL OR available.expires_at>=now())) THEN 0 ELSE 1 END,COALESCE((t.data->>'rating')::numeric,0)*COALESCE((t.data->>'votes')::numeric,0)/(COALESCE((t.data->>'votes')::numeric,0)+500) DESC,t.id ASC`;
+        : f.sort === 'latest'
+          ? sql`${trendRank} ASC NULLS LAST,(t.data->>'year')::int DESC NULLS LAST,${votes} DESC,t.id`
+          : f.sort === 'trending'
+            ? sql`${matchRank} DESC,${trendRank} ASC NULLS LAST,${prominence} DESC,${votes} DESC,t.id`
+            : f.sort === 'year'
+              ? sql`(t.data->>'year')::int DESC NULLS LAST,t.id ASC`
+              : q
+                ? sql`${matchRank} DESC,${prominence} DESC,${votes} DESC,t.id ASC`
+                : sql`CASE WHEN EXISTS(SELECT 1 FROM offers available WHERE available.title_id=t.id AND available.market=${market} AND (available.expires_at IS NULL OR available.expires_at>=now())) THEN 0 ELSE 1 END,COALESCE((t.data->>'rating')::numeric,0)*COALESCE((t.data->>'votes')::numeric,0)/(COALESCE((t.data->>'votes')::numeric,0)+500) DESC,t.id ASC`;
     const query =
       sql`SELECT t.data,s.availability,s.checked_at,s.attempt_at,s.error_code,s.revision,COALESCE((SELECT jsonb_agg(o.data) FROM offers o WHERE o.title_id=t.id AND o.market=${market} AND(o.expires_at IS NULL OR o.expires_at>=now())),'[]'::jsonb) AS offers,count(*) OVER() AS total FROM titles t JOIN localizations l ON l.title_id=t.id AND l.locale=${locale} LEFT JOIN snapshots s ON s.title_id=t.id AND s.market=${market} WHERE ${sql.join(conditions, sql` AND `)} ORDER BY ${order} LIMIT ${limit} OFFSET ${((f.page || 1) - 1) * limit}`.compile(
         compiler,
       );
-    const { rows } = await (
-      await db()
-    ).query<CatalogRow>(query.sql, [...query.parameters]);
+    const { rows } = await connection.query<CatalogRow>(query.sql, [
+      ...query.parameters,
+    ]);
     return {
       items: rows.map((r) => mapRow(r, market)),
       total: Number(rows[0]?.total || 0),

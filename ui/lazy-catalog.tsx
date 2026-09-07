@@ -4,6 +4,7 @@ import type { CardItem } from '@/domain/cards';
 import type { Filters } from '@/domain/types';
 import type { Locale } from '@/i18n/config';
 import { t } from '@/i18n/messages';
+import { trackEvent } from '@/lib/analytics';
 import { PosterCard } from './cards';
 
 export function LazyCatalog({
@@ -33,6 +34,15 @@ export function LazyCatalog({
       lock.current = true;
       setBusy(true);
       setFailed(false);
+      const startedAt = performance.now();
+      const analytics = {
+        locale,
+        market,
+        page_number: page + 1,
+        trigger: auto ? 'automatic' : 'manual',
+        source: filters.q ? 'search' : 'catalog',
+      };
+      trackEvent('catalog_load_more', analytics);
       try {
         const params = new URLSearchParams({
           locale,
@@ -58,8 +68,18 @@ export function LazyCatalog({
         ]);
         setPage(data.page);
         setAutomatic((current) => (auto ? current + 1 : 0));
+        trackEvent('catalog_load_success', {
+          ...analytics,
+          result_count: data.items.length,
+          duration_ms: Math.round(performance.now() - startedAt),
+        });
       } catch {
         setFailed(true);
+        trackEvent('catalog_load_error', {
+          ...analytics,
+          duration_ms: Math.round(performance.now() - startedAt),
+          error_code: 'load_failed',
+        });
       } finally {
         lock.current = false;
         setBusy(false);
@@ -93,6 +113,7 @@ export function LazyCatalog({
             key={item.id}
             item={item}
             index={index % 24}
+            position={((filters.page || 1) - 1) * 24 + index + 1}
             locale={locale}
             market={market}
           />

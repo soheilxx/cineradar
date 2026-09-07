@@ -8,6 +8,7 @@ import { t } from '@/i18n/messages';
 import { path } from '@/i18n/routes';
 import type { Locale } from '@/i18n/config';
 import type { CatalogItem, Change } from '@/domain/types';
+import { trackEvent } from '@/lib/analytics';
 export function Watchlist({
   locale,
   market,
@@ -45,9 +46,20 @@ export function Watchlist({
         setData(d.items);
         setEvents(d.changes);
         setFailed(false);
+        trackEvent('watchlist_load_success', {
+          market,
+          result_count: d.items.length,
+          change_count: d.changes.length,
+        });
       })
       .catch((e) => {
-        if (e.name !== 'AbortError') setFailed(true);
+        if (e.name !== 'AbortError') {
+          setFailed(true);
+          trackEvent('watchlist_load_error', {
+            market,
+            error_code: 'load_failed',
+          });
+        }
       })
       .finally(() => setBusy(false));
     return () => controller.abort();
@@ -68,7 +80,14 @@ export function Watchlist({
         <Choice
           label={t(locale, 'sort')}
           value={sort}
-          onChange={setSort}
+          onChange={(value) => {
+            setSort(value);
+            trackEvent('watchlist_sort_change', {
+              market,
+              filter_value: value,
+              item_count: data.length,
+            });
+          }}
           options={[
             { value: 'saved', label: t(locale, 'dateSaved') },
             { value: 'title', label: t(locale, 'titleSort') },

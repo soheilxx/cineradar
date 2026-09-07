@@ -35,7 +35,7 @@ type Props = {
 async function resolve(params: Props['params']) {
   const p = await params;
   if (!isLocale(p.locale) || !config().markets.includes(p.market)) notFound();
-  const route = routeFor(p.locale, p.segments?.[0] || '');
+  const route = routeFor(p.locale, p.segments?.[0] || '', !!p.segments?.[1]);
   if (!route || (p.segments && p.segments.length > 2)) notFound();
   const tail = p.segments?.[1] || '';
   let item: CatalogItem | null = null;

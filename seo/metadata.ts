@@ -4,8 +4,14 @@ import { t, type MessageKey } from '../i18n/messages';
 import { locales, type Locale, countryName } from '../i18n/config';
 import { path, type RouteKey } from '../i18n/routes';
 import { config } from '../lib/config';
-import { meaningfulTitle, streamingContent } from './content';
+import { streamingContent } from './content';
 import { infoDescriptions } from '../content/info';
+import { db } from '../data/db';
+import {
+  titleAlternates,
+  titleEligibility,
+  type IndexingSnapshot,
+} from './indexing';
 export function jsonLd(data: unknown) {
   return JSON.stringify(data)
     .replace(/</g, '\\u003c')
@@ -28,13 +34,18 @@ export function indexable(
     c.LICENSES_CONFIRMED === 'true' &&
     !filtered &&
     !!item &&
-    meaningfulTitle(item, locale) &&
-    ['available', 'empty'].includes(item.snapshot.availability) &&
-    !!item.snapshot.checkedAt &&
+    titleEligibility(item.title, locale, {
+      ...item.snapshot,
+      hasOffers: item.snapshot.offers.some(
+        (o) =>
+          o.market === item.snapshot.market &&
+          (!o.expiresOn || new Date(o.expiresOn).getTime() >= Date.now()),
+      ),
+    }).indexable &&
     ['movie', 'tv'].includes(key)
   );
 }
-export function metadata(
+export async function metadata(
   locale: Locale,
   market: string,
   key: RouteKey,
@@ -43,7 +54,7 @@ export function metadata(
   tail = '',
   page = 1,
   label?: string,
-): Metadata {
+): Promise<Metadata> {
   const c = config();
   const name = item?.title.localizations[locale].title;
   const title = name
@@ -75,16 +86,56 @@ export function metadata(
     c.DEPLOYMENT_ENV === 'production' &&
     c.LEGAL_APPROVED === 'true' &&
     c.LICENSES_CONFIRMED === 'true';
-  const canIndex =
+  let canIndex =
     indexable(item, key, filtered, locale) ||
     (published && landing && !filtered);
+  let allTitleAlternates: Record<string, string> | undefined;
+  if (item && canIndex && c.DATABASE_URL) {
+    const snapshots = await (
+      await db()
+    ).query<IndexingSnapshot>(
+      `SELECT s.market,s.availability,s.checked_at AS "checkedAt",EXISTS(SELECT 1 FROM offers o WHERE o.title_id=s.title_id AND o.market=s.market AND (o.expires_at IS NULL OR o.expires_at>=now())) AS "hasOffers" FROM snapshots s WHERE s.title_id=$1 AND s.market=ANY($2::text[])`,
+      [item.title.id, c.markets],
+    );
+    allTitleAlternates = titleAlternates(
+      item.title,
+      snapshots.rows,
+      c.SITE_URL,
+    );
+  }
+  if (canIndex && !item && landing && c.DATABASE_URL) {
+    const variants = await (
+      await db()
+    ).query<{ locale: Locale; market: string }>(
+      `SELECT DISTINCT l.locale,s.market FROM titles t JOIN localizations l ON l.title_id=t.id JOIN snapshots s ON s.title_id=t.id
+      WHERE s.market=ANY($1::text[]) AND t.data->>'year' IS NOT NULL AND COALESCE((t.data->>'fixture')::boolean,false)=false AND s.checked_at IS NOT NULL AND s.availability IN('available','empty','error')
+      AND (length(trim(l.overview))>0 OR (jsonb_array_length(t.data->'cast')>0 AND EXISTS(SELECT 1 FROM offers o WHERE o.title_id=t.id AND o.market=s.market AND (o.expires_at IS NULL OR o.expires_at>=now()))))
+      AND ($2 NOT IN('movies','series') OR t.media_type=CASE WHEN $2='movies' THEN 'movie' ELSE 'tv' END)
+      AND ($2<>'topics' OR t.data->'genres' ? $3)
+      AND ($2<>'providers' OR EXISTS(SELECT 1 FROM offers o WHERE o.title_id=t.id AND o.market=s.market AND (o.expires_at IS NULL OR o.expires_at>=now()) AND ($3='' OR o.provider_id=$3)))`,
+      [c.markets, key, tail],
+    );
+    canIndex = variants.rows.some(
+      (v) => v.locale === locale && v.market === market,
+    );
+    allTitleAlternates = Object.fromEntries(
+      variants.rows.map((v) => [
+        `${v.locale}-${v.market.toUpperCase()}`,
+        new URL(
+          path(v.locale, v.market, key, tail) +
+            (page > 1 ? `?page=${page}` : ''),
+          c.SITE_URL,
+        ).href,
+      ]),
+    );
+  }
   return {
     title,
     description,
     alternates: {
       canonical,
       languages: canIndex
-        ? {
+        ? allTitleAlternates || {
             ...(key === 'home' ? { 'x-default': c.SITE_URL + '/' } : {}),
             ...Object.fromEntries(
               locales
@@ -105,7 +156,11 @@ export function metadata(
           }
         : undefined,
     },
-    robots: { index: canIndex, follow: !['watchlist', 'ops'].includes(key) },
+    robots: {
+      index: canIndex,
+      follow: !['watchlist', 'ops'].includes(key),
+      ...(canIndex ? { 'max-image-preview': 'large' as const } : {}),
+    },
     openGraph: {
       title,
       description,

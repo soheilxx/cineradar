@@ -13,6 +13,7 @@ import { path, type RouteKey } from '@/i18n/routes';
 import { t } from '@/i18n/messages';
 import { comparisonPath } from '@/content/comparisons/routes';
 import { copy } from '@/content/comparisons/copy';
+import { trackEvent } from '@/lib/analytics';
 import {
   Dialog,
   DialogContent,
@@ -62,9 +63,14 @@ export function Header({
           value,
           label: countryName(locale, value),
         }))}
-        onChange={(v) =>
-          navigate(countryLinks[v] || path(locale, v), locale, v)
-        }
+        onChange={(v) => {
+          trackEvent('context_change', {
+            filter_name: 'market',
+            filter_value: v,
+            source: 'header',
+          });
+          navigate(countryLinks[v] || path(locale, v), locale, v);
+        }}
       />
       <Choice
         label={t(locale, 'language')}
@@ -74,6 +80,11 @@ export function Header({
           label: languageNames[value],
         }))}
         onChange={(v) => {
+          trackEvent('context_change', {
+            filter_name: 'language',
+            filter_value: v,
+            source: 'header',
+          });
           const nextMarket =
             v === 'en' && markets.includes('us') ? 'us' : market;
           navigate(
@@ -120,7 +131,13 @@ export function Header({
               <span>{t(locale, 'watchlist')}</span>
             </a>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog
+            open={open}
+            onOpenChange={(next) => {
+              setOpen(next);
+              trackEvent(next ? 'mobile_menu_open' : 'mobile_menu_close');
+            }}
+          >
             <div className="mobile-header-actions">
               <a
                 className="mobile-icon"

@@ -67,7 +67,14 @@ export function path(
 export function routeFor(
   locale: Locale,
   segment: string,
+  hasDetailSegment = false,
 ): RouteKey | undefined {
+  if (hasDetailSegment) {
+    const detail = (['movie', 'tv'] as const).find(
+      (key) => paths[key][locales.indexOf(locale)] === segment,
+    );
+    if (detail) return detail;
+  }
   return (Object.keys(paths) as RouteKey[]).find(
     (k) => paths[k][locales.indexOf(locale)] === segment,
   );
