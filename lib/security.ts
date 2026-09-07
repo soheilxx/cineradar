@@ -47,7 +47,10 @@ export async function rate(
   seconds = 60,
 ) {
   if (!config().DATABASE_URL) return config().APP_MODE === 'fixture';
-  const ip = request.headers.get('cf-connecting-ip') || 'shared';
+  const ip =
+    (process.env.VERCEL === '1'
+      ? request.headers.get('x-vercel-forwarded-for')
+      : request.headers.get('cf-connecting-ip')) || 'shared';
   const key = await sign(scope + ':' + ip);
   return (
     await (
