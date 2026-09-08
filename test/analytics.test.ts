@@ -124,6 +124,37 @@ test('Analytics has no pre-consent backlog, ignores unknown events and stops imm
   });
 });
 
+test('Scene recognition and voice events never forward descriptions, transcripts or audio', () => {
+  browser(() => {
+    const published: { name: string; params: unknown }[] = [];
+    setAnalyticsPublisher((name, params) => published.push({ name, params }));
+    const params = {
+      locale: 'de',
+      market: 'de',
+      query_length: 81,
+      description: 'Private memory with name@example.com',
+      transcript: 'Private voice transcript',
+      audio: 'data:audio/webm;base64,private',
+    };
+    trackEvent('identify_submit', params);
+    trackEvent('voice_result', params);
+    assert.equal(published.length, 0);
+    setConsent(true);
+    trackEvent('identify_submit', params);
+    trackEvent('voice_result', params);
+    assert.deepEqual(
+      published,
+      ['identify_submit', 'voice_result'].map((name) => ({
+        name,
+        params: { locale: 'de', market: 'de', query_length: 81 },
+      })),
+    );
+    setConsent(false);
+    trackEvent('identify_confirm', { title_id: 'tv:63174' });
+    assert.equal(published.length, 2);
+  });
+});
+
 test('Analytics publisher failures cannot interrupt a visitor action', () => {
   browser(() => {
     setConsent(true);

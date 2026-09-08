@@ -26,6 +26,9 @@ import {
 import { Watchlist } from '@/ui/watchlist';
 import { ProviderSelection } from '@/ui/provider-selection';
 import { metadata } from '@/seo/metadata';
+import { jsonLd } from '@/seo/metadata';
+import { identifyMetadata, identifySchema } from '@/seo/identify';
+import { TitleIdentify } from '@/ui/title-identify';
 import type { CatalogItem, Filters } from '@/domain/types';
 export const dynamic = 'force-dynamic';
 type Props = {
@@ -60,6 +63,8 @@ export async function generateMetadata({ params, searchParams }: Props) {
   if (editorial) return comparisonMetadata(editorial.locale, editorial.id);
   const r = await resolve(params);
   const search = await searchParams;
+  if (r.route === 'identify')
+    return identifyMetadata(r.locale, Object.keys(search).length > 0);
   const label =
     r.tail && r.route === 'providers'
       ? (await providers(r.market)).find((p) => p.id === r.tail)?.name
@@ -85,9 +90,11 @@ export default async function Page({ params, searchParams }: Props) {
   const { locale, market, route, tail, item } = await resolve(params);
   const raw = await searchParams;
   const filtered = filterSchema.safeParse(
-    Object.fromEntries(
-      Object.entries(raw).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]),
-    ),
+    route === 'identify'
+      ? {}
+      : Object.fromEntries(
+          Object.entries(raw).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]),
+        ),
   );
   if (!filtered.success) notFound();
   const { mine, ...rest } = filtered.data;
@@ -156,6 +163,20 @@ export default async function Page({ params, searchParams }: Props) {
           .filter((entry) => entry.title.id !== item.title.id)
           .slice(0, 6)}
       />
+    );
+  } else if (route === 'identify') {
+    body = (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLd(identifySchema(locale)) }}
+        />
+        <TitleIdentify
+          locale={locale}
+          market={market}
+          aiEnabled={config().identifyAiEnabled}
+        />
+      </>
     );
   } else if (route === 'home') {
     const [data, latestMovies, latestSeries, recent, free, ...providerRows] =

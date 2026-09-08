@@ -43,13 +43,20 @@ export function Footer({ locale, market }: { locale: Locale; market: string }) {
         <div className="footer-link-groups">
           <nav aria-label={labels.discover[locale]}>
             <h2>{labels.discover[locale]}</h2>
-            {(['movies', 'series', 'providers', 'new', 'free'] as const).map(
-              (k) => (
-                <AppLink key={k} href={path(locale, market, k)}>
-                  {t(locale, k)}
-                </AppLink>
-              ),
-            )}
+            {(
+              [
+                'movies',
+                'series',
+                'providers',
+                'identify',
+                'new',
+                'free',
+              ] as const
+            ).map((k) => (
+              <AppLink key={k} href={path(locale, market, k)}>
+                {t(locale, k)}
+              </AppLink>
+            ))}
           </nav>
           <nav aria-label={labels.service[locale]}>
             <h2>{labels.service[locale]}</h2>

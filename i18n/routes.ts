@@ -22,6 +22,13 @@ const paths = {
     'my-providers',
   ],
   finder: ['heute-abend', 'ce-soir', 'stasera', 'esta-noche', 'tonight'],
+  identify: [
+    'titel-finden',
+    'retrouver-un-titre',
+    'trova-titolo',
+    'encontrar-titulo',
+    'find-title',
+  ],
   new: ['neu', 'nouveautes', 'novita', 'novedades', 'new'],
   leaving: [
     'laeuft-aus',

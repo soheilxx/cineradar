@@ -44,6 +44,7 @@ import { imageVariant, imageSet } from '@/domain/artwork';
 import { fold } from '@/domain/search';
 import { analyticsPrivacyCopy } from '@/content/analytics';
 import { ConsentSettingsButton } from './analytics-consent';
+import { identifyCopy } from '@/content/identify';
 export function PageHeading({
   locale: _locale,
   title,
@@ -124,6 +125,18 @@ export function HomePage({
           </span>
         </div>
         <Search locale={locale} market={market} />
+        <AppLink
+          className="identify-promo"
+          href={path(locale, market, 'identify')}
+          data-analytics-control="identify_enter"
+        >
+          <Sparkles size={18} />
+          <span>
+            <strong>{identifyCopy[locale].promo}</strong>
+            <span>{identifyCopy[locale].promoDetail}</span>
+          </span>
+          <ArrowRight size={17} />
+        </AppLink>
       </section>
       <ProviderSelection {...{ locale, market, providers }} />
       {feature ? (
@@ -810,6 +823,7 @@ export function InfoPage({
       'privacyText',
       'privacyHosting',
       'privacyContact',
+      'privacyIdentify',
       'privacyRights',
       'contextPrivacy',
     ],

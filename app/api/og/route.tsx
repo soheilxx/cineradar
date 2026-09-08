@@ -8,6 +8,7 @@ import { config } from '@/lib/config';
 import { getComparison } from '@/content/comparisons';
 import { copy } from '@/content/comparisons/copy';
 import { infoDescriptions } from '@/content/info';
+import { identifyEditorial } from '@/content/identify-editorial';
 import type { MessageKey } from '@/i18n/messages';
 export async function GET(req: Request) {
   const raw = new URL(req.url).searchParams.get('locale') || 'en';
@@ -39,9 +40,11 @@ export async function GET(req: Request) {
     'topics',
   ];
   let pageTitle =
-    info || genericPages.includes(page)
-      ? t(locale, page as MessageKey)
-      : t(locale, 'headline');
+    page === 'identify'
+      ? identifyEditorial[locale].headline
+      : info || genericPages.includes(page)
+        ? t(locale, page as MessageKey)
+        : t(locale, 'headline');
   if (page === 'providers' && tail) {
     const provider = (await providers(market)).find((p) => p.id === tail);
     if (!provider) return new Response(null, { status: 404 });
@@ -80,10 +83,12 @@ export async function GET(req: Request) {
     ? guide.focus[locale]
     : comparison === 'hub'
       ? copy.compare[locale]
-      : info
-        ? 'Cineradar · Wiresoft AG'
-        : countryName(locale, market) +
-          (item?.title.year ? ' · ' + item.title.year : '');
+      : page === 'identify'
+        ? identifyEditorial[locale].nav
+        : info
+          ? 'Cineradar · Wiresoft AG'
+          : countryName(locale, market) +
+            (item?.title.year ? ' · ' + item.title.year : '');
   let artwork: string | undefined;
   const imageSource =
     item?.title.backdrop ||

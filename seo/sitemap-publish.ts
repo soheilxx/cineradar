@@ -7,6 +7,7 @@ import { locales } from '../i18n/config';
 import { path } from '../i18n/routes';
 import { comparisons } from '../content/comparisons';
 import { comparisonPath } from '../content/comparisons/routes';
+import { identifySitemapEntries } from './identify';
 import {
   titleAlternates,
   titleEligibility,
@@ -204,6 +205,7 @@ export function buildSitemapEntries(
         images: [],
       });
   }
+  entries.push(...identifySitemapEntries(origin, markets));
   return entries;
 }
 

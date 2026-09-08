@@ -1,6 +1,7 @@
 import { IntlMessageFormat } from 'intl-messageformat';
 import { locales, type Locale } from './config';
 import { experienceMessages } from './experience';
+import { identifyPrivacyParagraphs } from '../content/identify-editorial';
 type Five = readonly [string, string, string, string, string];
 export const messages = {
   ...experienceMessages,
@@ -18,6 +19,14 @@ export const messages = {
   ],
   watchlist: ['Merkliste', 'Ma liste', 'La mia lista', 'Mi lista', 'Watchlist'],
   finder: ['Heute Abend', 'Ce soir', 'Stasera', 'Esta noche', 'Tonight'],
+  identify: [
+    'Titel vergessen?',
+    'Titre oublié ?',
+    'Titolo dimenticato?',
+    '¿Título olvidado?',
+    'Forgot the title?',
+  ],
+  privacyIdentify: identifyPrivacyParagraphs,
   search: ['Suchen', 'Rechercher', 'Cerca', 'Buscar', 'Search'],
   searchHint: [
     'Film oder Serie suchen',

@@ -53,7 +53,8 @@ export function Header({
         JSON.stringify({ locale: l, market: m }),
       );
     } catch {}
-    const destination = url + window.location.search;
+    const destination =
+      url + (route === 'identify' ? '' : window.location.search);
     trackEvent('context_change', {
       filter_name: field,
       filter_value: field === 'language' ? l : m,
@@ -108,17 +109,17 @@ export function Header({
       />
     </>
   );
-  const nav = (['home', 'movies', 'series', 'providers'] as const).map(
-    (key) => (
-      <AppLink
-        key={key}
-        href={path(locale, market, key)}
-        aria-current={route === key ? 'page' : undefined}
-      >
-        {t(locale, key)}
-      </AppLink>
-    ),
-  );
+  const nav = (
+    ['home', 'movies', 'series', 'providers', 'identify'] as const
+  ).map((key) => (
+    <AppLink
+      key={key}
+      href={path(locale, market, key)}
+      aria-current={route === key ? 'page' : undefined}
+    >
+      {t(locale, key)}
+    </AppLink>
+  ));
   return (
     <>
       <AppLink className="skip" href="#main" tabIndex={0}>

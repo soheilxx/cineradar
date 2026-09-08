@@ -58,6 +58,13 @@ export const infoDescriptions = {
   ),
 };
 export const infoHeadings = {
+  privacyIdentify: l(
+    'Titelsuche mit Beschreibung und Diktat',
+    'Recherche par description et dictée',
+    'Ricerca tramite descrizione e dettatura',
+    'Búsqueda mediante descripción y dictado',
+    'Finding titles by description and dictation',
+  ),
   aboutText: l(
     'Was Cineradar macht',
     'Le rôle de Cineradar',

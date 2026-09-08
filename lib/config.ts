@@ -20,6 +20,18 @@ const envSchema = z.object({
   SYNC_ENABLED: z.enum(['true', 'false']).default('false'),
   GA4_ENABLED: z.enum(['true', 'false']).default('false'),
   GA4_DEBUG: z.enum(['true', 'false']).default('false'),
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_IDENTIFY_MODEL: z
+    .string()
+    .regex(/^[a-zA-Z0-9._-]{1,100}$/)
+    .default('gpt-5.4-mini'),
+  OPENAI_TRANSCRIBE_MODEL: z
+    .string()
+    .regex(/^[a-zA-Z0-9._-]{1,100}$/)
+    .default('gpt-4o-mini-transcribe'),
+  IDENTIFY_AI_ENABLED: z.enum(['true', 'false']).default('false'),
+  IDENTIFY_DAILY_LIMIT: z.coerce.number().int().nonnegative().default(200),
+  IDENTIFY_MONTHLY_LIMIT: z.coerce.number().int().nonnegative().default(4000),
   ADMIN_KEY: z.string().optional(),
   SESSION_SECRET: z.string().optional(),
   CRON_SECRET: z.string().optional(),
@@ -101,6 +113,8 @@ export function config(
     throw new Error('Missing configuration: ' + missing.join(', '));
   return {
     ...c,
+    identifyAiEnabled:
+      c.IDENTIFY_AI_ENABLED === 'true' && Boolean(c.OPENAI_API_KEY),
     analyticsEnabled:
       (c.GA4_ENABLED === 'true' &&
         c.APP_MODE === 'live' &&
