@@ -76,15 +76,6 @@ export function TitleIdentify({
           ))}
         </div>
       </section>
-      <aside className="identify-privacy">
-        <h2>{copy.privacyHeading}</h2>
-        <p>{copy.privacyNotice}</p>
-        <p>{copy.browserVoiceNotice}</p>
-        {aiEnabled && <p>{copy.aiNotice}</p>}
-        <AppLink href={path(locale, market, 'privacy')}>
-          {t(locale, 'privacy')} <ArrowRight size={16} />
-        </AppLink>
-      </aside>
       <nav className="identify-explore" aria-label="Cineradar">
         {(['movies', 'series', 'new', 'finder'] as const).map((key) => (
           <AppLink key={key} href={path(locale, market, key)}>

@@ -1,6 +1,6 @@
 'use client';
 import { useId } from 'react';
-import { Mic, Square, X, LoaderCircle, Check } from 'lucide-react';
+import { Mic, Square, X, LoaderCircle, Check, Info } from 'lucide-react';
 import type { Locale } from '@/i18n/config';
 import type { VoiceErrorCode } from '@/lib/voice-controller';
 import { voiceCopy as copy } from '@/content/voice-input';
@@ -76,33 +76,13 @@ export function VoiceInput({
   return (
     <section
       className={`voice-input${voice.busy ? ' voice-input-active' : ''}`}
-      aria-labelledby={`${id}-title`}
+      aria-label={copy.title[locale]}
     >
-      <div className="voice-heading">
-        <span className="voice-symbol" aria-hidden="true">
-          <Mic size={20} />
-        </span>
-        <strong id={`${id}-title`}>{copy.title[locale]}</strong>
-        {voice.busy && (
-          <span className="voice-time" aria-hidden="true">
-            {Math.floor(elapsedSeconds / 60)}:
-            {String(elapsedSeconds % 60).padStart(2, '0')} / 1:00
-          </span>
-        )}
-      </div>
-      <p className="voice-note" id={`${id}-notice`}>
-        {voice.ready && voice.mode === 'unsupported'
-          ? copy.unsupported[locale]
-          : voice.mode === 'server'
-            ? copy.serverInfo[locale]
-            : copy.browserInfo[locale]}
-      </p>
       <div className="voice-actions">
         {!voice.busy ? (
           <button
             type="button"
             className="voice-start"
-            aria-describedby={`${id}-notice`}
             disabled={
               !voice.ready ||
               disabled ||
@@ -151,7 +131,27 @@ export function VoiceInput({
             ))}
           </span>
         )}
+        {voice.busy && (
+          <span className="voice-time" aria-hidden="true">
+            {Math.floor(elapsedSeconds / 60)}:
+            {String(elapsedSeconds % 60).padStart(2, '0')} / 1:00
+          </span>
+        )}
+        <details className="voice-info">
+          <summary aria-controls={`${id}-notice`}>
+            <Info size={17} aria-hidden="true" />
+            <span className="sr-only">{copy.infoLabel[locale]}</span>
+          </summary>
+          <p id={`${id}-notice`} className="voice-note">
+            {voice.mode === 'server'
+              ? copy.serverInfo[locale]
+              : copy.browserInfo[locale]}
+          </p>
+        </details>
       </div>
+      {voice.ready && voice.mode === 'unsupported' && !voice.error && (
+        <p className="voice-note">{copy.unsupported[locale]}</p>
+      )}
       {!remaining && !voice.busy && (
         <p className="voice-note">{copy.full[locale]}</p>
       )}

@@ -17,6 +17,7 @@ import {
 } from '@/content/identify';
 import { trackEvent } from '@/lib/analytics';
 import { path } from '@/i18n/routes';
+import { t } from '@/i18n/messages';
 import { Artwork } from './artwork';
 import { AppLink } from './app-link';
 import { VoiceInput } from './voice-input';
@@ -198,9 +199,6 @@ export function IdentifyExperience({
           <span className="identify-input-step">01</span>
           <label htmlFor="scene-description">{c.label}</label>
         </div>
-        <p id="scene-hint" className="identify-hint">
-          {c.hint}
-        </p>
         <div className="identify-input-wrap">
           <textarea
             ref={textarea}
@@ -218,7 +216,7 @@ export function IdentifyExperience({
               source.current = 'text';
               setError('');
             }}
-            aria-describedby="scene-hint scene-count"
+            aria-describedby="scene-count"
             aria-invalid={Boolean(error && description.trim().length < 15)}
           />
           <div className="identify-input-tools">
@@ -351,7 +349,12 @@ export function IdentifyExperience({
             </button>
           )}
         </div>
-        <p className="identify-mode">{aiEnabled ? c.ai : c.catalog}</p>
+        <div className="identify-form-meta">
+          <span className="identify-mode">{aiEnabled ? c.ai : c.catalog}</span>
+          <AppLink href={path(locale, market, 'privacy')}>
+            {t(locale, 'privacy')}
+          </AppLink>
+        </div>
         <div className="sr-only" role="status">
           {loading ? c.loading : ''}
         </div>
@@ -373,7 +376,6 @@ export function IdentifyExperience({
             response.notice !== 'ai_unavailable' && (
               <p className="identify-notice">{c.catalog}</p>
             )}
-          <p className="identify-result-note">{c.noGuarantee}</p>
           <div className="identify-results-grid">
             {visibleItems.map(({ card, reasons, match }, index) => (
               <article
@@ -435,14 +437,14 @@ export function IdentifyExperience({
                       </ul>
                     </div>
                   )}
-                  <p className="identify-providers">
-                    {card.providers.length
-                      ? card.providers
-                          .slice(0, 3)
-                          .map((provider) => provider.name)
-                          .join(' · ')
-                      : c.noProvider}
-                  </p>
+                  {card.providers.length > 0 && (
+                    <p className="identify-providers">
+                      {card.providers
+                        .slice(0, 3)
+                        .map((provider) => provider.name)
+                        .join(' · ')}
+                    </p>
+                  )}
                   <AppLink
                     className="identify-detail-link"
                     href={path(locale, market, card.type, card.slug)}
