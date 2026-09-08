@@ -98,6 +98,20 @@ export const experienceMessages = {
     '{loaded} de {total} títulos',
     '{loaded} of {total} titles',
   ],
+  catalogEnd: [
+    'Ende der Ergebnisse',
+    'Fin des résultats',
+    'Fine dei risultati',
+    'Fin de los resultados',
+    'End of results',
+  ],
+  catalogPages: [
+    'Seiten auswählen',
+    'Choisir une page',
+    'Scegli una pagina',
+    'Elegir una página',
+    'Choose a page',
+  ],
   whereTitle: [
     'Wo läuft {title}?',
     'Où regarder {title} ?',

@@ -24,12 +24,6 @@ import { OfferList } from './offer-list';
 import { ContactPage } from './contact-page';
 import { config } from '@/lib/config';
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-} from '@/components/ui/pagination';
-import {
   titleSchema,
   jsonLd,
   breadcrumbSchema,
@@ -387,7 +381,7 @@ export function ListingPage({
                 country: countryName(locale, market),
               });
   const page = filters.page || 1;
-  const pages = Math.max(1, Math.ceil(total / 24));
+  const pages = Math.min(1000, Math.max(1, Math.ceil(total / 24)));
   const searchQuery = (filters.q || '').trim();
   const normalizedSearch = fold(searchQuery);
   const needsSearch =
@@ -423,6 +417,30 @@ export function ListingPage({
     p.set('page', String(n));
     return '?' + p.toString();
   };
+  const navigation =
+    pages > 1 ? (
+      <details key="catalog-pagination" className="catalog-pagination-toggle">
+        <summary>{t(locale, 'catalogPages')}</summary>
+        <nav
+          className="catalog-pagination"
+          aria-label={t(locale, 'catalogPages')}
+        >
+          {page > 1 && (
+            <AppLink href={link(page - 1)} className="button" rel="prev">
+              {t(locale, 'previous')}
+            </AppLink>
+          )}
+          <span className="catalog-page-count">
+            {page} / {pages}
+          </span>
+          {page < pages && (
+            <AppLink href={link(page + 1)} className="button" rel="next">
+              {t(locale, 'next')}
+            </AppLink>
+          )}
+        </nav>
+      </details>
+    ) : null;
   return (
     <>
       <PageHeading {...{ locale, title, description }} />
@@ -480,35 +498,14 @@ export function ListingPage({
               ])}
               initialItems={items.map((item) => catalogCard(item, locale))}
               {...{ locale, market, filters, total }}
+              navigation={navigation}
             />
           ) : (
-            <Empty locale={locale} unavailable={unavailable} />
+            <>
+              <Empty locale={locale} unavailable={unavailable} />
+              {navigation}
+            </>
           )}
-          <Pagination aria-label={t(locale, 'next')}>
-            <PaginationContent>
-              {page > 1 && (
-                <PaginationItem>
-                  <PaginationLink href={link(page - 1)} className="button">
-                    {t(locale, 'previous')}
-                  </PaginationLink>
-                </PaginationItem>
-              )}
-              {pages > 1 && (
-                <PaginationItem>
-                  <span>
-                    {page} / {pages}
-                  </span>
-                </PaginationItem>
-              )}
-              {page < pages && (
-                <PaginationItem>
-                  <PaginationLink href={link(page + 1)} className="button">
-                    {t(locale, 'next')}
-                  </PaginationLink>
-                </PaginationItem>
-              )}
-            </PaginationContent>
-          </Pagination>
         </section>
       </div>
     </>

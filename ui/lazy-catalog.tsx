@@ -1,5 +1,12 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { CardItem } from '@/domain/cards';
 import type { Filters } from '@/domain/types';
 import type { Locale } from '@/i18n/config';
@@ -13,25 +20,31 @@ export function LazyCatalog({
   locale,
   market,
   filters,
+  navigation,
 }: {
   initialItems: CardItem[];
   total: number;
   locale: Locale;
   market: string;
   filters: Filters;
+  navigation?: ReactNode;
 }) {
   const [items, setItems] = useState(initialItems);
   const [page, setPage] = useState(filters.page || 1);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [automatic, setAutomatic] = useState(0);
+  const [currentTotal, setCurrentTotal] = useState(total);
+  const [exhausted, setExhausted] = useState(false);
+  const [ready, setReady] = useState(false);
+  const gridId = useId();
   const lock = useRef(false);
   const mounted = useRef(false);
   const request = useRef<AbortController | null>(null);
   const sentinel = useRef<HTMLDivElement>(null);
-  const hasMore = page * 24 < total;
+  const hasMore = !exhausted && page < 1000 && page * 24 < currentTotal;
   useEffect(() => {
     mounted.current = true;
+    setReady(true);
     return () => {
       mounted.current = false;
       request.current?.abort();
@@ -75,17 +88,27 @@ export function LazyCatalog({
         });
         if (!current()) return;
         if (!response.ok) throw Error('load');
-        const data: { items: CardItem[]; page: number } = await response.json();
+        const data: { items: CardItem[]; page: number; total: number } =
+          await response.json();
         if (!current()) return;
         if (controller.signal.aborted) throw Error('timeout');
-        if (data.page !== page + 1 || !data.items.length) throw Error('page');
+        if (
+          data.page !== page + 1 ||
+          !Array.isArray(data.items) ||
+          !Number.isSafeInteger(data.total) ||
+          data.total < 0
+        )
+          throw Error('page');
         setItems((current) => [
           ...new Map(
             [...current, ...data.items].map((item) => [item.id, item]),
           ).values(),
         ]);
         setPage(data.page);
-        setAutomatic((current) => (auto ? current + 1 : 0));
+        // A successful empty page can follow a shrinking live catalogue. Its
+        // window-count total may be zero; finish without discarding loaded cards.
+        if (!data.items.length) setExhausted(true);
+        else setCurrentTotal(data.total);
         trackEvent('catalog_load_success', {
           ...analytics,
           result_count: data.items.length,
@@ -114,23 +137,23 @@ export function LazyCatalog({
     if (
       !sentinel.current ||
       !hasMore ||
+      busy ||
       failed ||
-      automatic >= 3 ||
       !('IntersectionObserver' in window)
     )
       return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) void load(true);
+        if (entries.some((entry) => entry.isIntersecting)) void load(true);
       },
       { rootMargin: '200px' },
     );
     observer.observe(sentinel.current);
     return () => observer.disconnect();
-  }, [load, hasMore, failed, automatic]);
+  }, [load, hasMore, failed, busy]);
   return (
     <>
-      <div className="poster-grid">
+      <div className="poster-grid" id={gridId} aria-busy={busy}>
         {items.map((item, index) => (
           <PosterCard
             key={item.id}
@@ -142,21 +165,39 @@ export function LazyCatalog({
           />
         ))}
       </div>
-      <div className="load-more" ref={sentinel}>
-        <p role="status" aria-live="polite">
-          {failed
-            ? t(locale, 'loadFailed')
-            : t(locale, 'loadedCount', { loaded: items.length, total })}
-        </p>
-        {hasMore && (
-          <button
-            className="button"
-            disabled={busy}
-            onClick={() => void load()}
-          >
-            {busy ? t(locale, 'loading') : t(locale, 'loadMore')}
-          </button>
-        )}
+      <div className="catalog-continuation">
+        <div
+          className="load-more"
+          ref={sentinel}
+          data-catalog-state={
+            failed ? 'error' : busy ? 'loading' : hasMore ? 'idle' : 'complete'
+          }
+        >
+          <p role="status" aria-live="polite" aria-atomic="true">
+            {failed
+              ? t(locale, 'loadFailed')
+              : exhausted
+                ? t(locale, 'catalogEnd')
+                : t(locale, 'loadedCount', {
+                    loaded: items.length,
+                    total: Math.max(currentTotal, items.length),
+                  })}
+          </p>
+          {hasMore && (
+            <button
+              type="button"
+              className="button"
+              aria-controls={gridId}
+              disabled={!ready || busy}
+              onClick={() => void load()}
+            >
+              {busy
+                ? t(locale, 'loading')
+                : t(locale, failed ? 'retry' : 'loadMore')}
+            </button>
+          )}
+        </div>
+        {navigation}
       </div>
     </>
   );
