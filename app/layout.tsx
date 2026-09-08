@@ -5,6 +5,7 @@ import { config } from '@/lib/config';
 import { isLocale } from '@/i18n/config';
 import { Analytics } from '@/ui/analytics';
 import { AnalyticsConsent } from '@/ui/analytics-consent';
+import { fallbackMetadata } from '@/seo/fallback';
 import './globals.css';
 import './experience.css';
 import './editorial.css';
@@ -12,13 +13,13 @@ import './analytics.css';
 import './identify.css';
 import './voice-input.css';
 import './home-discovery.css';
-export const metadata: Metadata = {
-  icons: { icon: '/icon.svg', apple: '/apple-touch-icon.png' },
-  title: 'Cineradar · Find your next movie night',
-  description:
-    'Find where to stream films and TV shows. Your language. Your country. Your subscriptions.',
-  robots: { index: false, follow: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const raw = (await headers()).get('x-cineradar-locale') || 'en';
+  return {
+    ...fallbackMetadata(isLocale(raw) ? raw : 'en'),
+    icons: { icon: '/icon.svg', apple: '/apple-touch-icon.png' },
+  };
+}
 export default async function RootLayout({
   children,
 }: {

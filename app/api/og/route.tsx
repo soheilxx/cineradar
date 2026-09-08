@@ -10,6 +10,7 @@ import { copy } from '@/content/comparisons/copy';
 import { infoDescriptions } from '@/content/info';
 import { identifyEditorial } from '@/content/identify-editorial';
 import type { MessageKey } from '@/i18n/messages';
+import { ogTitleFontSize } from '@/seo/og';
 export async function GET(req: Request) {
   const raw = new URL(req.url).searchParams.get('locale') || 'en';
   const locale = isLocale(raw) ? raw : 'en';
@@ -38,6 +39,12 @@ export async function GET(req: Request) {
     'leaving',
     'free',
     'topics',
+    'search',
+    'watchlist',
+    'myProviders',
+    'finder',
+    'ops',
+    'notFound',
   ];
   let pageTitle =
     page === 'identify'
@@ -159,7 +166,7 @@ export async function GET(req: Request) {
       <div
         style={{
           display: 'flex',
-          fontSize: title.length > 60 ? 48 : 72,
+          fontSize: ogTitleFontSize(title),
           fontWeight: 700,
           lineHeight: 1.1,
           maxWidth: 1050,

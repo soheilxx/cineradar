@@ -43,7 +43,7 @@ export const specialists: Comparison[] = [
           'Moteur de recommandations de films et séries.',
           'Motore di consigli per film e serie.',
           'Motor de recomendaciones de películas y series.',
-          'Movie and show recommendation engine.',
+          'Movie and series recommendation engine.',
         ),
         'https://www.movieofthenight.com/about',
       ),
@@ -122,7 +122,7 @@ export const specialists: Comparison[] = [
           'La description iOS indique listes, suivi des séries et alertes.',
           'La descrizione iOS indica liste, tracciamento serie e avvisi.',
           'La descripción de iOS indica listas, seguimiento de series y avisos.',
-          'The iOS description lists watchlists, show tracking and availability alerts.',
+          'The iOS description lists watchlists, series tracking and availability alerts.',
         ),
         'https://apps.apple.com/us/app/reelgood-streaming-guide/id1031391869',
         l(
@@ -246,7 +246,7 @@ export const specialists: Comparison[] = [
       'Cineradar diffuse-t-il les films ?',
       'Cineradar riproduce i film?',
       '¿Cineradar reproduce películas?',
-      'Does Cineradar play films like a streaming service?',
+      'Does Cineradar play movies like a streaming service?',
     ),
     answer: l(
       'Nein. Cineradar hilft dir, passende Angebote zu finden, und leitet dich über einen Angebotslink weiter. Der jeweilige Dienst übernimmt Wiedergabe, Anmeldung, Altersprüfung und Abrechnung. Prüfe dessen Bedingungen vor einem Abschluss.',
@@ -337,7 +337,7 @@ export const specialists: Comparison[] = [
       'Suivre ses séries ou trouver une offre ?',
       'Seguire le serie o trovare un’offerta?',
       '¿Seguir series o encontrar ofertas?',
-      'Track your shows or find an offer?',
+      'Track your series or find an offer?',
     ),
     intro: l(
       'Welche Folge fehlt noch, und wo lässt sie sich ansehen? Diese Fragen hängen zusammen, brauchen aber unterschiedliche Funktionen. Vergleiche Cineradar als Streaming-Suche mit Trakts Schwerpunkt auf deinem Sehverlauf.',
@@ -377,7 +377,7 @@ export const specialists: Comparison[] = [
       'Pour conserver votre historique personnel, choisissez un outil de suivi et vérifiez ses intégrations. Cineradar complète l’étape suivante : trouver un film ou une série dans le marché voulu. Une offre de saison n’indique pas les épisodes déjà vus.',
       'Per conservare la cronologia personale, scegli uno strumento di tracciamento e verifica le integrazioni. Cineradar completa il passo successivo: cercare un film o una serie nel mercato desiderato. Un’offerta di stagione non indica gli episodi già visti.',
       'Para conservar tu historial personal, elige una herramienta de seguimiento y revisa sus integraciones. Cineradar complementa el siguiente paso: encontrar una película o serie en tu mercado. Una oferta de temporada no indica qué episodios has visto.',
-      'For a personal viewing history, use a tracking tool and check its integrations. Cineradar complements the next step: searching for a film or show in your market. A season offer is not a record of which episodes you have watched.',
+      'For a personal viewing history, use a tracking tool and check its integrations. Cineradar complements the next step: searching for a movie or series in your market. A season offer is not a record of which episodes you have watched.',
     ),
     question: l(
       'Kann Cineradar meinen Trakt-Verlauf übernehmen?',

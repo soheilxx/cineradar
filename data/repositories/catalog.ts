@@ -217,20 +217,28 @@ export async function getTitle(
   return rows[0] ? mapRow(rows[0], market) : null;
 }
 export async function providers(market: string): Promise<Provider[]> {
+  return (await providerStatus(market)).items;
+}
+export async function providerStatus(
+  market: string,
+  database?: Database,
+): Promise<{ items: Provider[]; unavailable: boolean }> {
   if (config().APP_MODE === 'fixture')
-    return (await import('../../test/fixtures/catalog')).fixtureProviders;
-  if (!config().DATABASE_URL) return [];
+    return {
+      items: (await import('../../test/fixtures/catalog')).fixtureProviders,
+      unavailable: false,
+    };
+  if (!config().DATABASE_URL) return { items: [], unavailable: true };
   try {
-    return (
-      await (
-        await db()
-      ).query<{ data: Provider }>(
+    const rows = (
+      await (database || (await db())).query<{ data: Provider }>(
         "SELECT data FROM providers WHERE market=$1 ORDER BY data->>'name'",
         [market],
       )
     ).rows.map((x) => x.data);
+    return { items: rows, unavailable: false };
   } catch {
-    return [];
+    return { items: [], unavailable: true };
   }
 }
 export async function changes(

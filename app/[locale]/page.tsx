@@ -8,11 +8,19 @@ import { ComparisonPage } from '@/ui/comparison-page';
 import { comparisonMetadata } from '@/seo/comparisons';
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const route = comparisonRoute('/' + (await params).locale);
-  return route ? comparisonMetadata(route.locale, route.id) : {};
+  return route
+    ? comparisonMetadata(
+        route.locale,
+        route.id,
+        Object.keys(await searchParams).length > 0,
+      )
+    : {};
 }
 export default async function LocalePage({
   params,

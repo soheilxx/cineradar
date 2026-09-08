@@ -84,7 +84,7 @@ export const guides: Comparison[] = [
       'Pour savoir où regarder un film, essayez les deux recherches. Si les listes partagées ou les alertes sont essentielles, examinez les fonctions décrites par WerStreamt.es. Cineradar convient à la recherche sans compte et à une liste sur votre appareil, mais ne propose pas de liste familiale partagée.',
       'Per sapere dove vedere un film puoi provare entrambe le ricerche. Se contano liste condivise o avvisi, valuta le funzioni descritte da WerStreamt.es. Cineradar serve per cercare senza account e salvare sul proprio dispositivo; non offre una lista familiare condivisa.',
       'Para saber dónde ver una película, prueba ambas búsquedas. Si necesitas listas compartidas o avisos, revisa las funciones de WerStreamt.es. Cineradar permite buscar sin cuenta y guardar en tu dispositivo; no ofrece una lista familiar compartida.',
-      'For finding a film’s streaming offer, try either search. If shared lists or automatic reminders matter, consider the described WerStreamt.es features. Cineradar suits account-free search and saving on your own device; it currently has no shared family watchlist.',
+      'For finding a movie’s streaming offer, try either search. If shared lists or automatic reminders matter, consider the described WerStreamt.es features. Cineradar suits account-free search and saving on your own device; it currently has no shared family watchlist.',
     ),
     question: l(
       'Gehören WerStreamt.es und Cineradar zusammen?',
@@ -196,7 +196,7 @@ export const guides: Comparison[] = [
       'Aucune idée pour ce soir, ou déjà un film précis en tête ? Le choix entre inspiration et recherche d’une offre détermine l’outil le plus utile.',
       'Non sai cosa guardare oppure hai già un film in mente? La differenza tra ispirazione e ricerca mirata determina quale strumento ti aiuta.',
       '¿No sabes qué ver o ya tienes una película en mente? La diferencia entre inspiración y búsqueda concreta determina qué herramienta te conviene.',
-      'No idea what to watch, or already have a film in mind? The difference between inspiration and finding a specific offer determines which interface helps.',
+      'No idea what to watch, or already have a movie in mind? The difference between inspiration and finding a specific offer determines which interface helps.',
     ),
     claims: [
       claim(
@@ -227,7 +227,7 @@ export const guides: Comparison[] = [
       'Pour trouver des idées grâce à d’autres personnes, les fonctions sociales comptent. Pour ensuite vérifier abonnement, location ou chaîne supplémentaire, Cineradar fonctionne sans compte. Sa liste locale convient à un appareil ; elle ne remplace pas un profil social.',
       'Se cerchi consigli attraverso altre persone, le funzioni sociali contano. Per verificare poi abbonamento, noleggio o canale aggiuntivo, Cineradar funziona senza account. La lista locale è utile su un dispositivo, ma non sostituisce un profilo sociale.',
       'Si buscas ideas a través de otras personas, las funciones sociales importan. Para comprobar después suscripción, alquiler o canal adicional, Cineradar funciona sin cuenta. Su lista local sirve en un dispositivo, pero no sustituye un perfil social.',
-      'If you find film ideas through other people, social features matter. For the next step of checking subscription, rental or add-on access, Cineradar works without an account. Its local watchlist is useful on one device; it does not replace a social profile.',
+      'If you find movie ideas through other people, social features matter. For the next step of checking subscription, rental or add-on access, Cineradar works without an account. Its local watchlist is useful on one device; it does not replace a social profile.',
     ),
     question: l(
       'Sind Cineradars Empfehlungen auf meinen Geschmack trainiert?',
@@ -257,14 +257,14 @@ export const guides: Comparison[] = [
       'Communauté cinéma et offres',
       'Community cinema e offerte',
       'Comunidad cinéfila y ofertas',
-      'Film community & streaming offers',
+      'Movie community & streaming offers',
     ),
     intro: l(
       'Ein guter Filmtipp und ein verfügbares Streamingangebot beantworten verschiedene Fragen. Nutze diesen Vergleich, um redaktionelle Orientierung mit dem nächsten Schritt zum Filmabend zu verbinden.',
       'Une recommandation et une offre disponible répondent à des questions différentes. Ce comparatif relie l’orientation éditoriale à l’étape suivante : regarder le film.',
       'Un consiglio e un’offerta disponibile rispondono a domande diverse. Questo confronto collega l’orientamento editoriale al passo successivo: guardare il film.',
       'Una recomendación y una oferta disponible responden a preguntas distintas. Esta comparativa conecta la orientación editorial con el siguiente paso: ver la película.',
-      'A good film recommendation and an available streaming offer answer different questions. Use this comparison to connect editorial guidance with the next step of watching.',
+      'A good movie recommendation and an available streaming offer answer different questions. Use this comparison to connect editorial guidance with the next step of watching.',
     ),
     claims: [
       claim(
@@ -285,7 +285,7 @@ export const guides: Comparison[] = [
           'Choix des plateformes et entrées distinctes films et séries.',
           'Selezione delle piattaforme e accessi separati per film e serie.',
           'Selección de plataformas y entradas separadas para películas y series.',
-          'Provider selection and separate film and show sections.',
+          'Provider selection and separate movie and series sections.',
         ),
         'https://www.moviepilot.de/streaming/neuerscheinungen',
       ),
@@ -295,14 +295,14 @@ export const guides: Comparison[] = [
       'Lisez une recommandation pour comprendre l’intérêt d’un film. Une fois votre choix fait, cherchez son titre exact et son année dans Cineradar. Un guide de disponibilité complète cette lecture sans remplacer critique ou discussion.',
       'Leggi un consiglio per capire perché un film potrebbe interessarti. Una volta scelto, cerca titolo esatto e anno su Cineradar. Una guida alla disponibilità completa la lettura senza sostituire critica o discussioni.',
       'Lee una recomendación para entender por qué una película puede interesarte. Después busca el título exacto y el año en Cineradar. Una guía de disponibilidad complementa esa lectura sin sustituir críticas ni debates.',
-      'Read editorial recommendations to understand why a film might interest you. Once you choose, search its exact title and year on Cineradar. An availability guide complements that context without replacing film criticism or community discussion.',
+      'Read editorial recommendations to understand why a movie might interest you. Once you choose, search its exact title and year on Cineradar. An availability guide complements that context without replacing movie criticism or community discussion.',
     ),
     question: l(
       'Kann ich bei Cineradar eigene Filmkritiken veröffentlichen?',
       'Puis-je publier des critiques sur Cineradar ?',
       'Posso pubblicare recensioni su Cineradar?',
       '¿Puedo publicar críticas en Cineradar?',
-      'Can I publish film reviews on Cineradar?',
+      'Can I publish movie reviews on Cineradar?',
     ),
     answer: l(
       'Derzeit nicht. Cineradar konzentriert sich auf Titeldaten und die Suche nach Angeboten. Bewertungen aus den Quelldaten sind keine Cineradar-Nutzerbewertungen. Du kannst Titel speichern und unzutreffende Angebotsdaten über die Detailseite melden.',

@@ -5,7 +5,7 @@ export const infoDescriptions = {
     'Cineradar aide à trouver films et séries sur les plateformes. Découvrez son exploitant, le fonctionnement de la recherche et ses limites.',
     'Cineradar aiuta a trovare film e serie sulle piattaforme. Scopri chi lo gestisce, come funziona la ricerca e quali sono i limiti.',
     'Cineradar ayuda a encontrar películas y series en plataformas. Conoce quién lo opera, cómo funciona la búsqueda y sus límites.',
-    'Cineradar helps you find films and shows on streaming services. Learn who operates it, how search works and what its limits are.',
+    'Cineradar helps you find movies and series on streaming services. Learn who operates it, how search works and what its limits are.',
   ),
   data: l(
     'So verarbeitet Cineradar Informationen von TMDB und der Streaming Availability API. Erfahre, was Länder, Prüfzeitpunkte, fehlende Angebote und Zusatzkanäle bedeuten.',

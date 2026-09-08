@@ -27,7 +27,7 @@ export const copy = {
     'Trouver le bon film, une offre de streaming, une liste partagée ou le prochain épisode : ce sont des besoins différents. Comparez dix services selon votre usage.',
     'Trovare il film giusto, una piattaforma, una lista condivisa o il prossimo episodio sono esigenze diverse. Confronta dieci servizi in base al tuo obiettivo.',
     'Encontrar una película, una oferta, una lista compartida o el siguiente episodio son necesidades distintas. Compara diez servicios según lo que buscas.',
-    'Finding a film, a streaming offer, a shared list or your next unwatched episode are different tasks. Compare ten services around what you actually need.',
+    'Finding a movie, a streaming offer, a shared list or your next unwatched episode are different tasks. Compare ten services around what you actually need.',
   ),
   eyebrow: l(
     'Cineradar · Orientierung vor dem Filmabend',
@@ -126,7 +126,7 @@ export const copy = {
     'Saisissez un titre puis vérifiez l’année et le format. Le pays de recherche reste visible et se règle indépendamment de la langue.',
     'Inserisci il titolo e verifica anno e formato. Il paese resta visibile e si sceglie indipendentemente dalla lingua.',
     'Escribe el título y comprueba el año y el formato. El país permanece visible y se cambia independientemente del idioma.',
-    'Enter a title and check its year and whether it is a film or show. The search country stays visible and can be changed independently of language.',
+    'Enter a title and check its year and whether it is a movie or series. The search country stays visible and can be changed independently of language.',
   ),
   step2: l(
     'Das passende Angebot prüfen',
@@ -140,7 +140,7 @@ export const copy = {
     'Ouvrez le résultat. Distinguez abonnement, chaîne supplémentaire, location et achat. Pour une série, vérifiez la saison : une offre ne couvre pas forcément tous les épisodes.',
     'Apri il risultato e distingui abbonamento, canale aggiuntivo, noleggio e acquisto. Per le serie verifica la stagione: un’offerta non include sempre tutti gli episodi.',
     'Abre el resultado. Distingue suscripción, canal adicional, alquiler y compra. En las series, comprueba la temporada: una oferta no incluye necesariamente todos los episodios.',
-    'Open the result. Distinguish subscription, add-on channel, rental and purchase. For shows, check the season: one offer does not necessarily include every episode.',
+    'Open the result. Distinguish subscription, add-on channel, rental and purchase. For series, check the season: one offer does not necessarily include every episode.',
   ),
   step3: l(
     'Beim Anbieter ansehen',
@@ -154,7 +154,7 @@ export const copy = {
     'Le lien mène au service, où s’appliquent ses conditions d’accès et ses tarifs. Cineradar ne diffuse pas de films et ne vend pas d’abonnements.',
     'Il link apre il servizio con i suoi prezzi e requisiti di accesso. Cineradar non riproduce film e non vende abbonamenti.',
     'El enlace abre el servicio, con sus precios y condiciones. Cineradar no reproduce películas ni vende suscripciones.',
-    'The offer link opens the provider, where its access rules, prices and terms apply. Cineradar does not play films or sell subscriptions.',
+    'The offer link opens the provider, where its access rules, prices and terms apply. Cineradar does not play movies or series or sell subscriptions.',
   ),
   faq: l(
     'Fragen zur Entscheidung',
@@ -175,7 +175,7 @@ export const copy = {
     'Quel film ou quelle série cherchez-vous ?',
     'Quale film o serie cerchi?',
     '¿Qué película o serie buscas?',
-    'Which film or show are you looking for?',
+    'Which movie or series are you looking for?',
   ),
   searchButton: l(
     'Streaming-Angebote finden',

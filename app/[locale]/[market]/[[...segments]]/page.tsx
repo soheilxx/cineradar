@@ -1,16 +1,16 @@
 import { notFound, permanentRedirect } from 'next/navigation';
+import { cache } from 'react';
 import { comparisonRoute } from '@/content/comparisons/routes';
 import { ComparisonPage } from '@/ui/comparison-page';
 import { comparisonMetadata } from '@/seo/comparisons';
-import { filterSchema } from '@/lib/catalog-filters';
-import { isLocale, locales } from '@/i18n/config';
+import { isLocale, locales, type Locale } from '@/i18n/config';
 import { path, routeFor } from '@/i18n/routes';
 import { t } from '@/i18n/messages';
 import { config } from '@/lib/config';
 import {
   catalog,
   getTitle,
-  providers,
+  providerStatus,
   knownSlug,
 } from '@/data/repositories/catalog';
 import { Header } from '@/ui/header';
@@ -30,11 +30,21 @@ import { jsonLd } from '@/seo/metadata';
 import { identifyMetadata, identifySchema } from '@/seo/identify';
 import { TitleIdentify } from '@/ui/title-identify';
 import type { CatalogItem, Filters } from '@/domain/types';
+import {
+  routeQuery,
+  isPaginatedRoute,
+  missingCatalogPage,
+  topicGenres,
+} from '@/seo/routing';
 export const dynamic = 'force-dynamic';
 type Props = {
   params: Promise<{ locale: string; market: string; segments?: string[] }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+const routeCatalog = cache((locale: Locale, market: string, filters: string) =>
+  catalog(locale, market, JSON.parse(filters) as Filters),
+);
+const routeProviders = cache(providerStatus);
 async function resolve(params: Props['params']) {
   const p = await params;
   if (!isLocale(p.locale) || !config().markets.includes(p.market)) notFound();
@@ -54,32 +64,62 @@ async function resolve(params: Props['params']) {
       notFound();
     }
   } else if (tail && !['providers', 'topics'].includes(route)) notFound();
-  return { locale: p.locale, market: p.market, route, tail, item };
+  let label: string | undefined;
+  let providerUnavailable = false;
+  if (route === 'providers') {
+    const providerResult = await routeProviders(p.market);
+    providerUnavailable = providerResult.unavailable;
+    label = providerResult.items.find((provider) => provider.id === tail)?.name;
+    if (tail && !label && !providerUnavailable) notFound();
+  }
+  if (tail && route === 'topics') {
+    if (!topicGenres.some((genre) => genre === tail)) notFound();
+    label = t(p.locale, tail as 'drama');
+  }
+  return {
+    locale: p.locale,
+    market: p.market,
+    route,
+    tail,
+    item,
+    label,
+    providerUnavailable,
+  };
 }
 export async function generateMetadata({ params, searchParams }: Props) {
   const p = await params;
   const editorial =
     !p.segments?.length && comparisonRoute(`/${p.locale}/${p.market}`);
-  if (editorial) return comparisonMetadata(editorial.locale, editorial.id);
+  if (editorial)
+    return comparisonMetadata(
+      editorial.locale,
+      editorial.id,
+      Object.keys(await searchParams).length > 0,
+    );
   const r = await resolve(params);
   const search = await searchParams;
-  if (r.route === 'identify')
-    return identifyMetadata(r.locale, Object.keys(search).length > 0);
-  const label =
-    r.tail && r.route === 'providers'
-      ? (await providers(r.market)).find((p) => p.id === r.tail)?.name
-      : r.tail && r.route === 'topics'
-        ? t(r.locale, r.tail as 'drama')
-        : undefined;
+  const query = routeQuery(r.route, r.tail, search);
+  if (!query) notFound();
+  if (r.route === 'identify') return identifyMetadata(r.locale, query.filtered);
+  const listing = isPaginatedRoute(r.route, r.tail)
+    ? await routeCatalog(r.locale, r.market, JSON.stringify(query.filters))
+    : undefined;
+  if (
+    listing &&
+    !r.providerUnavailable &&
+    missingCatalogPage(query.page, listing)
+  )
+    notFound();
   return metadata(
     r.locale,
     r.market,
     r.route,
     r.item,
-    Object.keys(search).some((key) => key !== 'page'),
+    query.filtered,
     r.tail,
-    Number(search.page || 1),
-    label,
+    query.page,
+    r.label,
+    { unavailable: listing?.unavailable || r.providerUnavailable },
   );
 }
 export default async function Page({ params, searchParams }: Props) {
@@ -87,55 +127,13 @@ export default async function Page({ params, searchParams }: Props) {
   const editorial =
     !p.segments?.length && comparisonRoute(`/${p.locale}/${p.market}`);
   if (editorial) return <ComparisonPage {...editorial} />;
-  const { locale, market, route, tail, item } = await resolve(params);
+  const { locale, market, route, tail, item, providerUnavailable } =
+    await resolve(params);
   const raw = await searchParams;
-  const filtered = filterSchema.safeParse(
-    route === 'identify'
-      ? {}
-      : Object.fromEntries(
-          Object.entries(raw).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]),
-        ),
-  );
-  if (!filtered.success) notFound();
-  const { mine, ...rest } = filtered.data;
-  const filters: Filters = { ...rest, mine: mine?.split(',') };
-  const ps = await providers(market);
-  if (route === 'movies') {
-    filters.type = 'movie';
-    filters.sort ||= 'latest';
-  }
-  if (route === 'series') {
-    filters.type = 'tv';
-    filters.sort ||= 'latest';
-  }
-  if (['new', 'leaving', 'free', 'finder'].includes(route))
-    filters.scope = route as Filters['scope'];
-  if (route === 'providers' && tail) {
-    if (!ps.some((p) => p.id === tail)) notFound();
-    filters.provider = tail;
-  }
-  if (route === 'topics' && tail) {
-    if (
-      ![
-        'action',
-        'adventure',
-        'animation',
-        'comedy',
-        'crime',
-        'documentary',
-        'drama',
-        'family',
-        'fantasy',
-        'horror',
-        'mystery',
-        'romance',
-        'scifi',
-        'thriller',
-      ].includes(tail)
-    )
-      notFound();
-    filters.genre = tail;
-  }
+  const query = routeQuery(route, tail, raw);
+  if (!query) notFound();
+  const filters = query.filters;
+  const ps = (await routeProviders(market)).items;
   const languageLinks = Object.fromEntries(
     locales.map((l) => [
       l,
@@ -255,7 +253,9 @@ export default async function Page({ params, searchParams }: Props) {
       'providers',
     ].includes(route)
   ) {
-    const data = await catalog(locale, market, filters);
+    const data = await routeCatalog(locale, market, JSON.stringify(filters));
+    if (!providerUnavailable && missingCatalogPage(query.page, data))
+      notFound();
     body = (
       <ListingPage
         {...{ locale, market, route, filters, providers: ps, ...data }}

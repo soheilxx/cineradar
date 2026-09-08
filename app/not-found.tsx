@@ -1,7 +1,12 @@
 import { headers } from 'next/headers';
-import { isLocale } from '@/i18n/config';
+import { isLocale, defaultMarkets } from '@/i18n/config';
 import { t } from '@/i18n/messages';
 import { Brand } from '@/ui/brand';
+import { fallbackMetadata } from '@/seo/fallback';
+export async function generateMetadata() {
+  const raw = (await headers()).get('x-cineradar-locale') || 'en';
+  return fallbackMetadata(isLocale(raw) ? raw : 'en', true);
+}
 export default async function NotFound() {
   const h = await headers();
   const l = h.get('x-cineradar-locale') || 'en';
@@ -13,7 +18,7 @@ export default async function NotFound() {
       <h1>{t(locale, 'notFound')}</h1>
       <p>{t(locale, 'notFoundText')}</p>
       <a
-        href={`/${locale}/${h.get('x-cineradar-market') || 'de'}/`}
+        href={`/${locale}/${h.get('x-cineradar-market') || defaultMarkets[locale]}/`}
         className="button primary"
       >
         {t(locale, 'backHome')}

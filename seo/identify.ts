@@ -7,6 +7,8 @@ import {
   IDENTIFY_EDITORIAL_UPDATED,
 } from '../content/identify-editorial';
 import { sitemapHash, type SitemapEntry } from './sitemap-xml';
+import { conciseDescription } from './copy';
+import { OG_IMAGE_VERSION } from './og';
 
 export function identifyAlternates(origin: string, markets: string[]) {
   return Object.fromEntries(
@@ -26,7 +28,7 @@ export function identifyMetadata(locale: Locale, filtered = false): Metadata {
     c.SITE_URL,
   ).href;
   const image = new URL(
-    `/api/og?locale=${locale}&market=${defaultMarkets[locale]}&page=identify&revision=${IDENTIFY_EDITORIAL_UPDATED}-${sitemapHash(text.nav + text.headline).slice(0, 12)}`,
+    `/api/og?locale=${locale}&market=${defaultMarkets[locale]}&page=identify&revision=${IDENTIFY_EDITORIAL_UPDATED}-${sitemapHash(text.nav + text.headline).slice(0, 12)}&v=${OG_IMAGE_VERSION}`,
     c.SITE_URL,
   ).href;
   const published =
@@ -36,7 +38,7 @@ export function identifyMetadata(locale: Locale, filtered = false): Metadata {
     c.LICENSES_CONFIRMED === 'true';
   return {
     title: text.seoTitle,
-    description: text.metaDescription,
+    description: conciseDescription(text.metaDescription),
     alternates: {
       canonical,
       languages: filtered
@@ -52,10 +54,12 @@ export function identifyMetadata(locale: Locale, filtered = false): Metadata {
       type: 'website',
       siteName: 'Cineradar',
       title: text.seoTitle,
-      description: text.metaDescription,
+      description: conciseDescription(text.metaDescription),
       url: canonical,
-      locale,
-      alternateLocale: locales.filter((l) => l !== locale),
+      locale: `${locale}_${defaultMarkets[locale].toUpperCase()}`,
+      alternateLocale: locales
+        .filter((l) => l !== locale && c.markets.includes(defaultMarkets[l]))
+        .map((l) => `${l}_${defaultMarkets[l].toUpperCase()}`),
       images: [
         {
           url: image,
@@ -69,7 +73,7 @@ export function identifyMetadata(locale: Locale, filtered = false): Metadata {
     twitter: {
       card: 'summary_large_image',
       title: text.seoTitle,
-      description: text.metaDescription,
+      description: conciseDescription(text.metaDescription),
       images: [{ url: image, alt: text.headline }],
     },
   };

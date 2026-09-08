@@ -1,12 +1,21 @@
 import type { Metadata } from 'next';
 import type { CatalogItem } from '../domain/types';
 import { t, type MessageKey } from '../i18n/messages';
-import { locales, type Locale, countryName } from '../i18n/config';
+import {
+  locales,
+  defaultMarkets,
+  type Locale,
+  countryName,
+} from '../i18n/config';
 import { path, type RouteKey } from '../i18n/routes';
 import { config } from '../lib/config';
-import { streamingContent } from './content';
+import { streamingDescription } from './content';
 import { infoDescriptions } from '../content/info';
-import { db } from '../data/db';
+import { db, type Database } from '../data/db';
+import { pageCopy, pageLabel, conciseDescription } from './copy';
+import { isPaginatedRoute } from './routing';
+import { isIndexableLanding, landingAlternates } from './landings';
+import { OG_IMAGE_VERSION } from './og';
 import {
   titleAlternates,
   titleEligibility,
@@ -54,80 +63,97 @@ export async function metadata(
   tail = '',
   page = 1,
   label?: string,
+  options: { database?: Database; unavailable?: boolean } = {},
 ): Promise<Metadata> {
   const c = config();
+  page =
+    isPaginatedRoute(key, tail) && Number.isInteger(page) && page > 1
+      ? page
+      : 1;
+  const country = countryName(locale, market);
+  const copy = pageCopy(locale, country, key, label);
+  const info = Object.hasOwn(infoDescriptions, key);
+  const canonicalMarket = info ? defaultMarkets[locale] : market;
   const name = item?.title.localizations[locale].title;
-  const title = name
-    ? `${t(locale, 'watchTitle', { title: name })}${item.title.year ? ' (' + item.title.year + ')' : ''} · ${countryName(locale, market)} | Cineradar`
-    : `${label || t(locale, key as MessageKey)} · ${countryName(locale, market)} | Cineradar`;
-  const description = name
-    ? streamingContent(item, locale, market).description
-    : key in infoDescriptions
-      ? infoDescriptions[key as keyof typeof infoDescriptions][locale]
-      : t(locale, 'catalogIntro', {
-          title: label || t(locale, key as MessageKey),
-          country: countryName(locale, market),
-        });
+  const baseTitle = name
+    ? `${t(locale, 'watchTitle', { title: name })}${item.title.year ? ' (' + item.title.year + ')' : ''} · ${country}`
+    : `${copy.title}${key === 'home' || info || key === 'ops' ? '' : ` · ${country}`}`;
+  const title = `${baseTitle}${page > 1 ? ` · ${pageLabel(locale, page)}` : ''} | Cineradar`;
+  const baseDescription = name
+    ? streamingDescription(item, locale, market)
+    : conciseDescription(
+        info
+          ? infoDescriptions[key as keyof typeof infoDescriptions][locale]
+          : copy.description ||
+              t(locale, 'catalogIntro', {
+                title: label || t(locale, key as MessageKey),
+                country,
+              }),
+      );
+  const description =
+    page > 1
+      ? `${pageLabel(locale, page)}. ${baseDescription}`
+      : baseDescription;
   const canonical = new URL(
-    path(locale, market, key, item?.title.localizations[locale].slug || tail) +
-      (page > 1 ? `?page=${page}` : ''),
+    path(
+      locale,
+      canonicalMarket,
+      key,
+      item?.title.localizations[locale].slug || tail,
+    ) + (page > 1 ? `?page=${page}` : ''),
     c.SITE_URL,
   ).href;
   const imageUrl = new URL(
-    `/api/og?locale=${locale}&market=${market}&page=${key}${tail ? '&tail=' + encodeURIComponent(tail) : ''}${item ? '&id=' + encodeURIComponent(item.title.id) : ''}&revision=${item?.title.revision || 'editorial-2'}`,
+    `/api/og?locale=${locale}&market=${canonicalMarket}&page=${key}${tail ? '&tail=' + encodeURIComponent(tail) : ''}${item ? '&id=' + encodeURIComponent(item.title.id) : ''}&revision=${item?.title.revision || 'editorial'}&v=${OG_IMAGE_VERSION}`,
     c.SITE_URL,
   ).href;
-  const landing =
-    ['home', 'movies', 'series', 'providers'].includes(key) ||
-    (key === 'topics' &&
-      ['scifi', 'thriller', 'comedy', 'drama'].includes(tail));
+  const landing = isIndexableLanding(key, tail);
   const published =
     c.APP_MODE === 'live' &&
     c.DEPLOYMENT_ENV === 'production' &&
     c.LEGAL_APPROVED === 'true' &&
     c.LICENSES_CONFIRMED === 'true';
   let canIndex =
-    indexable(item, key, filtered, locale) ||
-    (published && landing && !filtered);
+    !options.unavailable &&
+    (indexable(item, key, filtered, locale) ||
+      (published && landing && !filtered));
   let allTitleAlternates: Record<string, string> | undefined;
-  if (item && canIndex && c.DATABASE_URL) {
-    const snapshots = await (
-      await db()
-    ).query<IndexingSnapshot>(
-      `SELECT s.market,s.availability,s.checked_at AS "checkedAt",EXISTS(SELECT 1 FROM offers o WHERE o.title_id=s.title_id AND o.market=s.market AND (o.expires_at IS NULL OR o.expires_at>=now())) AS "hasOffers" FROM snapshots s WHERE s.title_id=$1 AND s.market=ANY($2::text[])`,
-      [item.title.id, c.markets],
-    );
-    allTitleAlternates = titleAlternates(
-      item.title,
-      snapshots.rows,
-      c.SITE_URL,
-    );
-  }
-  if (canIndex && !item && landing && c.DATABASE_URL) {
-    const variants = await (
-      await db()
-    ).query<{ locale: Locale; market: string }>(
-      `SELECT DISTINCT l.locale,s.market FROM titles t JOIN localizations l ON l.title_id=t.id JOIN snapshots s ON s.title_id=t.id
-      WHERE s.market=ANY($1::text[]) AND t.data->>'year' IS NOT NULL AND COALESCE((t.data->>'fixture')::boolean,false)=false AND s.checked_at IS NOT NULL AND s.availability IN('available','empty','error')
-      AND (length(trim(l.overview))>0 OR (jsonb_array_length(t.data->'cast')>0 AND EXISTS(SELECT 1 FROM offers o WHERE o.title_id=t.id AND o.market=s.market AND (o.expires_at IS NULL OR o.expires_at>=now()))))
-      AND ($2 NOT IN('movies','series') OR t.media_type=CASE WHEN $2='movies' THEN 'movie' ELSE 'tv' END)
-      AND ($2<>'topics' OR t.data->'genres' ? $3)
-      AND ($2<>'providers' OR EXISTS(SELECT 1 FROM offers o WHERE o.title_id=t.id AND o.market=s.market AND (o.expires_at IS NULL OR o.expires_at>=now()) AND ($3='' OR o.provider_id=$3)))`,
-      [c.markets, key, tail],
-    );
-    canIndex = variants.rows.some(
-      (v) => v.locale === locale && v.market === market,
-    );
-    allTitleAlternates = Object.fromEntries(
-      variants.rows.map((v) => [
-        `${v.locale}-${v.market.toUpperCase()}`,
-        new URL(
-          path(v.locale, v.market, key, tail) +
-            (page > 1 ? `?page=${page}` : ''),
-          c.SITE_URL,
-        ).href,
-      ]),
-    );
+  try {
+    if (item && canIndex && c.DATABASE_URL) {
+      const snapshots = await (
+        options.database || (await db())
+      ).query<IndexingSnapshot>(
+        `SELECT s.market,s.availability,s.checked_at AS "checkedAt",EXISTS(SELECT 1 FROM offers o WHERE o.title_id=s.title_id AND o.market=s.market AND (o.expires_at IS NULL OR o.expires_at>=now())) AS "hasOffers" FROM snapshots s WHERE s.title_id=$1 AND s.market=ANY($2::text[])`,
+        [item.title.id, c.markets],
+      );
+      allTitleAlternates = titleAlternates(
+        item.title,
+        snapshots.rows,
+        c.SITE_URL,
+      );
+      canIndex = Object.hasOwn(
+        allTitleAlternates,
+        `${locale}-${market.toUpperCase()}`,
+      );
+    }
+    if (canIndex && !item && landing && c.DATABASE_URL) {
+      allTitleAlternates = await landingAlternates(
+        options.database || (await db()),
+        c.SITE_URL,
+        c.markets,
+        key,
+        tail,
+        page,
+      );
+      canIndex = Object.hasOwn(
+        allTitleAlternates,
+        `${locale}-${market.toUpperCase()}`,
+      );
+    }
+  } catch {
+    // An unavailable registry must not turn an incomplete page into an indexed one.
+    canIndex = false;
+    allTitleAlternates = undefined;
   }
   return {
     title,
@@ -158,7 +184,7 @@ export async function metadata(
     },
     robots: {
       index: canIndex,
-      follow: !['watchlist', 'ops'].includes(key),
+      follow: !['watchlist', 'myProviders', 'ops'].includes(key),
       ...(canIndex ? { 'max-image-preview': 'large' as const } : {}),
     },
     openGraph: {
@@ -167,10 +193,15 @@ export async function metadata(
       type: 'website',
       url: canonical,
       siteName: 'Cineradar',
-      locale: locale + '_' + market.toUpperCase(),
-      alternateLocale: locales
-        .filter((l) => l !== locale)
-        .map((l) => l + '_' + market.toUpperCase()),
+      locale: locale + '_' + canonicalMarket.toUpperCase(),
+      alternateLocale:
+        allTitleAlternates && canIndex
+          ? Object.keys(allTitleAlternates)
+              .filter(
+                (tag) => tag !== `${locale}-${canonicalMarket.toUpperCase()}`,
+              )
+              .map((tag) => tag.replace('-', '_'))
+          : undefined,
       images: [
         {
           url: imageUrl,

@@ -6,10 +6,10 @@ type Five = readonly [string, string, string, string, string];
 export const messages = {
   ...experienceMessages,
   home: ['Entdecken', 'Découvrir', 'Scopri', 'Descubrir', 'Discover'],
-  movies: ['Filme', 'Films', 'Film', 'Películas', 'Films'],
-  series: ['Serien', 'Séries', 'Serie', 'Series', 'TV shows'],
-  movie: ['Film', 'Film', 'Film', 'Película', 'Film'],
-  tv: ['Serie', 'Série', 'Serie', 'Serie', 'TV show'],
+  movies: ['Filme', 'Films', 'Film', 'Películas', 'Movies'],
+  series: ['Serien', 'Séries', 'Serie', 'Series', 'Series'],
+  movie: ['Film', 'Film', 'Film', 'Película', 'Movie'],
+  tv: ['Serie', 'Série', 'Serie', 'Serie', 'TV series'],
   providers: [
     'Anbieter',
     'Plateformes',
@@ -33,7 +33,7 @@ export const messages = {
     'Rechercher un film ou une série',
     'Cerca un film o una serie',
     'Buscar película o serie',
-    'Search for a film or TV show',
+    'Search for a movie or TV series',
   ],
   headline: [
     'Weniger suchen. Mehr Filmabend.',
@@ -47,7 +47,7 @@ export const messages = {
     'Trouvez votre prochain film et où le regarder.',
     'Trova il tuo prossimo film e dove guardarlo.',
     'Encuentra tu próxima película y dónde verla.',
-    'Find your next great film — and where to watch it.',
+    'Find your next great movie — and where to watch it.',
   ],
   language: ['Sprache', 'Langue', 'Lingua', 'Idioma', 'Language'],
   market: [
@@ -244,7 +244,7 @@ export const messages = {
     'Le catalogue est en préparation. Les films et offres apparaîtront après vérification des données.',
     'Il catalogo è in preparazione. Film e offerte saranno disponibili dopo la verifica dei dati.',
     'El catálogo se está preparando. Las películas y ofertas aparecerán cuando se verifiquen los datos.',
-    'The catalogue is being prepared. Films and offers will appear once verified data is available.',
+    'The catalogue is being prepared. Movies and offers will appear once verified data is available.',
   ],
   save: [
     'Zur Merkliste',
@@ -274,7 +274,7 @@ export const messages = {
     'Votre prochaine soirée cinéma vous attend. Ajoutez un film ou une série.',
     'La tua prossima serata cinema ti aspetta. Salva un film o una serie.',
     'Tu próxima noche de cine te espera. Guarda una película o serie.',
-    'Your next movie night is waiting. Save a film or a TV show.',
+    'Your next movie night is waiting. Save a movie or a TV series.',
   ],
   changes: ['Änderungen', 'Changements', 'Cambiamenti', 'Cambios', 'Changes'],
   noChanges: [
@@ -315,7 +315,7 @@ export const messages = {
     'Temps pour un film',
     'Tempo per un film',
     'Tiempo para una película',
-    'Time for a film',
+    'Time for a movie',
   ],
   minutes: [
     '{count} Min.',
@@ -394,14 +394,14 @@ export const messages = {
     'Votre titre manque ? Nous pouvons rechercher d’autres films et séries.',
     'Manca il tuo titolo? Possiamo cercare altri film e serie.',
     '¿Falta tu título? Podemos buscar más películas y series.',
-    'Is your title missing? We can search for more films and series.',
+    'Is your title missing? We can search for more movies and series.',
   ],
   searchPending: [
     'Wir suchen nach weiteren Filmen und Serien. Neue bestätigte Treffer erscheinen hier automatisch.',
     'Nous recherchons d’autres films et séries. Les nouveaux résultats confirmés apparaîtront ici automatiquement.',
     'Stiamo cercando altri film e serie. I nuovi risultati confermati appariranno qui automaticamente.',
     'Estamos buscando más películas y series. Los nuevos resultados confirmados aparecerán aquí automáticamente.',
-    'We are searching for more films and series. Newly confirmed results will appear here automatically.',
+    'We are searching for more movies and series. Newly confirmed results will appear here automatically.',
   ],
   searchDeferred: [
     'Die zusätzliche Suche ist noch nicht abgeschlossen oder vorübergehend verzögert. Du kannst den Stand später erneut prüfen.',
@@ -455,7 +455,7 @@ export const messages = {
     'Oferta de la serie',
     'Series offer',
   ],
-  filmUnit: ['Film', 'Film', 'Film', 'Película', 'Film'],
+  filmUnit: ['Film', 'Film', 'Film', 'Película', 'Movie'],
   seasonUnit: ['Staffel', 'Saison', 'Stagione', 'Temporada', 'Season'],
   episodeUnit: ['Folge', 'Épisode', 'Episodio', 'Episodio', 'Episode'],
   partial: [
@@ -558,7 +558,7 @@ export const messages = {
     'Nous comparons les offres de streaming. Cineradar n’héberge aucun film. TMDb fournit les métadonnées, Movie of the Night les offres.',
     'Confrontiamo offerte streaming. Cineradar non ospita film. TMDb fornisce i metadati, Movie of the Night le offerte.',
     'Comparamos ofertas de streaming. Cineradar no aloja películas. TMDb proporciona los metadatos y Movie of the Night las ofertas.',
-    'We compare streaming offers. Cineradar does not host films. Metadata comes from TMDb; streaming offers come from Movie of the Night.',
+    'We compare streaming offers. Cineradar does not host movies or series. Metadata comes from TMDb; streaming offers come from Movie of the Night.',
   ],
   dataText: [
     'Sprache und Land sind unabhängig. Angebote gelten für das Land in der Adresse. Eine erfolgreiche leere Abfrage, ein Fehler und ein ungeprüfter Titel werden getrennt angezeigt. Preise werden nur bei gleicher Angebotsart, Qualität, Währung und Einheit verglichen.',
@@ -663,7 +663,7 @@ export const messages = {
     'L’exploitant indiqué ci-dessous est responsable de Cineradar. Cineradar présente les offres de streaming ; les films et séries sont diffusés par les plateformes concernées. Leurs conditions régissent les contrats, prix et prestations.',
     'Il gestore indicato di seguito è responsabile di Cineradar. Cineradar presenta le offerte di streaming; film e serie vengono riprodotti dalle rispettive piattaforme. Contratti, prezzi e servizi sono soggetti alle loro condizioni.',
     'El operador indicado a continuación es responsable de Cineradar. Cineradar informa sobre ofertas de streaming; las películas y series se reproducen en las respectivas plataformas. Sus condiciones rigen los contratos, precios y servicios.',
-    'The operator listed below is responsible for Cineradar. Cineradar presents streaming offers; films and shows play on the respective providers. Their terms apply to contracts, prices and services.',
+    'The operator listed below is responsible for Cineradar. Cineradar presents streaming offers; movies and series play on the respective providers. Their terms apply to contracts, prices and services.',
   ],
   privacyHosting: [
     'Die verantwortliche Stelle ist unten angegeben. Die Website wird bei Vercel betrieben; die Anwendungsdatenbank liegt bei Neon in Frankfurt. Für Auslieferung, Sicherheit und Fehlerbehebung verarbeiten die eingesetzten Dienste technische Verbindungsdaten, etwa IP-Adresse, Zeitpunkt und angeforderte Adresse. Die Anbieter arbeiten international; Verarbeitungen außerhalb der Schweiz und des Europäischen Wirtschaftsraums sind möglich. Informationen zu den Dienstleistern: vercel.com/legal/privacy-policy und neon.com/privacy-policy.',

@@ -136,7 +136,7 @@ Beispieltexte, sprachlich bei der Umsetzung zu verfeinern:
 | FR | Votre prochaine soirée cinéma commence ici. | Rechercher un film ou une série |
 | IT | La tua prossima serata cinema inizia qui. | Cerca un film o una serie |
 | ES | Tu próxima noche de cine empieza aquí. | Buscar película o serie |
-| EN | Your next movie night starts here. | Search for a movie or TV show |
+| EN | Your next movie night starts here. | Search for a movie or TV series |
 
 Anbieterauswahl ist optional. Ohne Auswahl gibt es eine überzeugende allgemeine Startseite. Kennzeichne „beliebt auf TMDb“, „Topliste eines Anbieters“ und „häufig auf Cineradar geöffnet“ eindeutig, falls diese unterschiedlichen Daten tatsächlich verwendet werden. Keine erfundenen Nutzerzahlen oder Beliebtheitssignale.
 

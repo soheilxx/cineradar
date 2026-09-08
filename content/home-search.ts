@@ -28,7 +28,7 @@ export const homeSearchCopy = {
     'Rechercher un film ou une série',
     'Cerca un film o una serie',
     'Buscar película o serie',
-    'Search for a film or TV show',
+    'Search for a movie or TV series',
   ),
   placeholder: l(
     'Titel eingeben …',
