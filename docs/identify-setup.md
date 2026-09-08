@@ -1,6 +1,6 @@
 # Betrieb: „Titel vergessen?“
 
-Stand: 8. September 2026. Die Textsuche hat einen lokalen Katalogpfad und eine vorbereitete OpenAI-Anbindung. Ohne Schlüssel und Aktivierung ist nur der ausdrücklich als Katalogabgleich bezeichnete Pfad aktiv. Ein erfolgreicher Test mit Modell-Doubles ist kein Live-OpenAI-Test.
+Stand: 8. September 2026. Die OpenAI-Textsuche ist im Produktionsdeployment aktiviert und mit echten Erkennungsanfragen erfolgreich geprüft. Auch die serverseitige Audiotranskription wurde mit synthetischer Sprache erfolgreich live geprüft. Zusätzlich bleibt der ausdrücklich bezeichnete lokale Katalogabgleich als Fallback verfügbar. Ein physisches Mikrofon ist noch separat zu verifizieren.
 
 ## Datenbank und Aktivierung
 
@@ -8,24 +8,24 @@ Vor dem Web-Release Migration `008_identify.sql` mit dem bestehenden Migrationsv
 
 Die folgenden Variablen serverseitig in Vercel unter **Project → Settings → Environment Variables** für das gewünschte Deployment eintragen und anschließend neu deployen. Lokal gehören sie in `.env.local`. Keine `NEXT_PUBLIC_`-Variablen verwenden und Schlüssel nicht in Chat, Git oder Analytics eintragen.
 
-| Variable                  | Wert / Bedeutung                                                          |
-| ------------------------- | ------------------------------------------------------------------------- |
-| `OPENAI_API_KEY`          | Schlüssel eines geeigneten OpenAI-API-Projekts mit aktivierter Abrechnung |
-| `OPENAI_IDENTIFY_MODEL`   | `gpt-5.4-mini`                                                            |
-| `OPENAI_TRANSCRIBE_MODEL` | `gpt-4o-mini-transcribe`                                                  |
-| `IDENTIFY_AI_ENABLED`     | Erst zur Aktivierung `true`; Standard ist `false`                         |
-| `IDENTIFY_DAILY_LIMIT`    | Standard `200` reservierte Modellaufrufe pro UTC-Tag                      |
-| `IDENTIFY_MONTHLY_LIMIT`  | Standard `4000` reservierte Modellaufrufe pro UTC-Monat                   |
+| Variable                  | Typ              | Wert / Bedeutung                                                     |
+| ------------------------- | ---------------- | -------------------------------------------------------------------- |
+| `OPENAI_API_KEY`          | **Secret**       | Erforderlicher Schlüssel des OpenAI-API-Projekts; sicher hinterlegen |
+| `IDENTIFY_AI_ENABLED`     | **Config**       | Für die Aktivierung erforderlich: `true`; ohne Angabe `false`        |
+| `OPENAI_IDENTIFY_MODEL`   | Config, optional | Ohne Angabe `gpt-5.4-mini`                                           |
+| `OPENAI_TRANSCRIBE_MODEL` | Config, optional | Ohne Angabe `gpt-4o-mini-transcribe`                                 |
+| `IDENTIFY_DAILY_LIMIT`    | Config, optional | Ohne Angabe `200` reservierte Modellaufrufe pro UTC-Tag              |
+| `IDENTIFY_MONTHLY_LIMIT`  | Config, optional | Ohne Angabe `4000` reservierte Modellaufrufe pro UTC-Monat           |
 
 Ein Schlüssel allein aktiviert die Funktion nicht. `identifyAiEnabled` setzt Schlüssel **und** Schalter voraus. Das Textmodell muss Responses, strikte JSON-Schema-Ausgaben und `reasoning.effort=none` unterstützen. Für ein anderes Modell sind Kompatibilitäts- und Qualitätsprüfung erforderlich; es gibt keine automatische Modellersetzung.
 
-Bei diesem Implementierungsstand war kein OpenAI-Schlüssel konfiguriert. Der reale Erkennungs- und Transkriptionsaufruf sowie Abrechnung, Projektzugang und Modellfreigabe müssen nach Einrichtung mit wenigen bewussten Testanfragen geprüft werden. Der Katalogpfad und kontrollierte Providerantworten sind unabhängig davon testbar.
+Nach Eintragung von `OPENAI_API_KEY` und `IDENTIFY_AI_ENABLED=true` wurde das [Produktionsdeployment cineradar-8i3llxpir-modernice](https://cineradar-8i3llxpir-modernice.vercel.app/) geprüft. Zwei synthetische deutsche Erinnerungsbeschreibungen lieferten echte Antworten mit `mode: ai`: Inception (`movie:27205`) auf Platz 1 in 7,63 Sekunden und Lucifer (`tv:63174`) auf Platz 1 in 3,87 Sekunden. Zusätzlich wurde Breaking Bad über das öffentliche Browserformular korrekt gefunden. Ein Transkriptionsaufruf mit synthetischer englischer Sprache lieferte HTTP 200 in 1,34 Sekunden und einen korrekten Text. Diese Stichproben belegen Modellzugang, Katalogauflösung und serverseitige Transkription; sie sind keine allgemeine Erkennungsquote und ersetzen keine Prüfung eines physischen Mikrofons.
 
 ## Aufruf- und Kostenkontrolle
 
 Die atomare PostgreSQL-Funktion `reserve_budget` reserviert vor jedem kostenpflichtigen Versuch einen Aufruf im eigenen Service `openai-identify`. Textsuche braucht höchstens zwei Aufrufe; eine Transkription braucht einen. Beide teilen Tages- und Monatsgrenze. Fehlversuche zählen mit; es gibt keine automatischen Wiederholungen oder Rückerstattung der Reservierung. TMDB-/Streaming-API-Budgets sind davon getrennt. Ein Limit von `0` verhindert weitere OpenAI-Aufrufe.
 
-Die Grenzwerte sind Aufruflimits, keine garantierten Eurobeträge. Tatsächliche Kosten hängen von Text-/Audioumfang, Modell und Anbieterpreisen ab. Zusätzlich OpenAI-Projektbudget und Benachrichtigungen konfigurieren. Textaufrufe haben jeweils maximal 2.000 Ausgabetokens. Die erste Stufe erhält höchstens 1.600 Eingabezeichen; die zweite höchstens 24 geprüfte Titel mit jeweils maximal 1.200 Zeichen Inhaltskontext und acht Cast-Namen. Der Erkennungslauf endet spätestens nach 25 Sekunden; die erste Modellstufe nach spätestens neun Sekunden. Keine Hintergrund- oder Toolaufrufe.
+Die Grenzwerte sind Aufruflimits, keine garantierten Eurobeträge. Tatsächliche Kosten hängen von Text-/Audioumfang, Modell und Anbieterpreisen ab. Zusätzlich OpenAI-Projektbudget und Benachrichtigungen konfigurieren. Unter Project settings → Limits → Spend → Edit spend limit kann ein monatlicher Betrag gesetzt werden. „Enforce a hard limit“ beendet weitere Anfragen nach Erreichen des erfassten Betrags; reine Spend alerts benachrichtigen lediglich. Die Durchsetzung kann etwas verzögert sein. Siehe [OpenAI Spend limits](https://developers.openai.com/api/docs/guides/spend-limits). Textaufrufe haben jeweils maximal 2.000 Ausgabetokens. Die erste Stufe erhält höchstens 1.600 Eingabezeichen; die zweite höchstens 24 geprüfte Titel mit jeweils maximal 1.200 Zeichen Inhaltskontext und acht Cast-Namen. Der Erkennungslauf endet spätestens nach 25 Sekunden; die erste Modellstufe nach spätestens neun Sekunden. Keine Hintergrund- oder Toolaufrufe.
 
 Kontingente nur als Metadaten prüfen, zum Beispiel:
 
