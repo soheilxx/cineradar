@@ -66,7 +66,7 @@ npm run media:run
 
 - **status:** liest die Anzahl je Verarbeitungsstatus. Ohne aktiven Bildspeicher wird `enabled: false` ausgegeben, ohne eine Datenbank zu öffnen.
 - **enqueue:** registriert aktuelle Poster- und Hintergrundquellen, Quellenänderungen und anstehende Auffrischungen. Maximal 100 Registrierungsdurchläufe mit jeweils 1.000 Einträgen; bei keinem weiteren Treffer endet der Aufruf. Es werden dabei keine Bilder heruntergeladen und keine TMDB-/Streaming-API-Aufrufe für Titel ausgeführt. `registered` zählt Zuordnungs-/Auffrischungsvorgänge, nicht zwingend neue unterschiedliche Bilddateien.
-- **run:** registriert einen begrenzten nächsten Abschnitt und verarbeitet bis zu 40 Jobs, zusätzlich begrenzt durch die Download-Konfiguration. Neue Jobs werden höchstens 60 Sekunden lang begonnen; bereits laufende Arbeit darf noch auslaufen. Der Batch verwendet zwei Worker und beendet danach die verwendete Datenbankverbindung.
+- **run:** registriert einen begrenzten nächsten Abschnitt und verarbeitet bis zu 40 Jobs, zusätzlich begrenzt durch die Download-Konfiguration. Neue Jobs werden höchstens 60 Sekunden lang begonnen; bereits laufende Arbeit darf noch auslaufen. Der Batch verwendet vier Worker und beendet danach die verwendete Datenbankverbindung.
 
 `enqueue` und `run` führen bei deaktiviertem Bildspeicher ebenfalls keine Datenbankarbeit aus. Die CLI gibt keine Blob-Tokens oder Originalinhalte aus.
 
@@ -77,6 +77,8 @@ Die vorhandene, durch den Admin-Login geschützte Betriebsseite zeigt die Zustä
 ## Cron, Backfill und Auffrischung
 
 Der bestehende Vercel-Cron ruft `/api/cron/` jede Minute auf. Nach den unabhängigen Sitemap-Arbeiten startet er einen begrenzten Medienbatch. Der Medienlauf ist durch `MEDIA_ENABLED` gesteuert; ein Pausieren der Katalogsynchronisierung über den bisherigen Sync-Schalter pausiert den Bildspeicher nicht. Für eine Pause des Bildspeichers ist die eigene Konfiguration maßgeblich.
+
+Der Cron-Batch verarbeitet mit vier Workern bis zu 60 Bilder und beginnt neue Arbeit höchstens 55 Sekunden lang. Anschließend werden bereits begonnene Bilder fertiggestellt. Pro Worker wird weiterhin nur eine Bildvariante gleichzeitig dekodiert und kodiert; Varianten werden in Gruppen von höchstens zwei hochgeladen. Die gemeinsame Datenbankgrenze von standardmäßig 60 Job-Starts pro Kalenderminute gilt auch bei überlappenden Cron- und Verwaltungsläufen. Diese Grenzen sind Höchstwerte; die tatsächliche Geschwindigkeit hängt von Bildgröße und Speicherantwortzeiten ab.
 
 Für den anfänglichen Backfill: Migration und privaten Store bereitstellen, Live-Konfiguration aktivieren, Quellen mit `media:enqueue` erfassen und die Queue durch Cron oder begrenzte `media:run`-Aufrufe abarbeiten lassen. Der Katalog bleibt dabei nutzbar. Einen vollständigen Backfill erst nach Prüfung der Zustandszahlen und konkreter eigener Bildadressen melden. Die Datenbank reserviert Download-Jobs atomar in einem gemeinsamen Minutenfenster; parallele Cron- und CLI-Aufrufe teilen sich dieselbe Grenze. Das Fenster ist an Kalenderminuten gebunden und kein gleitendes 60-Sekunden-Limit. Abgelaufene Zähler werden nach zwei Tagen entfernt.
 

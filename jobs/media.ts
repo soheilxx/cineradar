@@ -28,14 +28,16 @@ export async function runMediaBatch(
     Math.min(1000, options.registerLimit ?? 250),
   );
   const deadline =
-    Date.now() + Math.min(120000, options.maxDurationMs ?? 40000);
-  const maxJobs = Math.min(c.MEDIA_DOWNLOADS_PER_MINUTE, options.maxJobs ?? 40);
+    Date.now() + Math.min(120000, options.maxDurationMs ?? 55000);
+  const maxJobs = Math.min(c.MEDIA_DOWNLOADS_PER_MINUTE, options.maxJobs ?? 60);
   let started = 0,
     completed = 0,
     failed = 0,
     lost = 0;
   await Promise.all(
-    Array.from({ length: 2 }, async () => {
+    // Keep decoding bounded while overlapping source downloads and Blob uploads.
+    // claimMedia also enforces the shared minute limit across concurrent runs.
+    Array.from({ length: 4 }, async () => {
       while (Date.now() < deadline && started < maxJobs) {
         started++;
         const job = await claimMedia(database);
