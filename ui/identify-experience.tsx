@@ -6,6 +6,8 @@ import {
   LoaderCircle,
   RotateCcw,
   ScanSearch,
+  SlidersHorizontal,
+  ChevronDown,
   X,
 } from 'lucide-react';
 import type { Locale } from '@/i18n/config';
@@ -28,13 +30,22 @@ export function IdentifyExperience({
   market,
   aiEnabled,
   examples,
+  variant = 'page',
 }: {
   locale: Locale;
   market: string;
   aiEnabled: boolean;
   examples: readonly string[];
+  variant?: 'page' | 'home';
 }) {
   const c = identifyCopy[locale];
+  const inputId =
+    variant === 'home' ? 'home-scene-description' : 'scene-description';
+  const countId = `${inputId}-count`;
+  const resultsId =
+    variant === 'home'
+      ? 'home-identify-results-heading'
+      : 'identify-results-heading';
   const ready = useHydrated();
   const [description, setDescription] = useState('');
   const [mediaType, setMediaType] =
@@ -49,10 +60,21 @@ export function IdentifyExperience({
   const [error, setError] = useState('');
   const request = useRef<AbortController | null>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
+  const submitButton = useRef<HTMLButtonElement>(null);
+  const revealSubmit = useRef(false);
   const resultHeading = useRef<HTMLHeadingElement>(null);
   const started = useRef(false);
   const source = useRef('text');
   const busy = loading || voiceBusy || !ready;
+  useEffect(() => {
+    if (!voiceBusy && revealSubmit.current) {
+      revealSubmit.current = false;
+      submitButton.current?.scrollIntoView({
+        block: 'nearest',
+        behavior: 'instant',
+      });
+    }
+  }, [description, voiceBusy]);
   useEffect(
     () => () => {
       request.current?.abort();
@@ -86,6 +108,7 @@ export function IdentifyExperience({
     setDecade('');
     setMediaType('all');
     source.current = 'text';
+    revealSubmit.current = false;
     textarea.current?.focus();
   }
   async function submit(event: SubmitEvent<HTMLFormElement>) {
@@ -187,7 +210,7 @@ export function IdentifyExperience({
   const visibleItems =
     response?.items.filter((item) => !excluded.includes(item.card.id)) || [];
   return (
-    <div className="identify-experience">
+    <div className={`identify-experience identify-experience-${variant}`}>
       <form
         className="identify-form"
         method="post"
@@ -196,14 +219,17 @@ export function IdentifyExperience({
         aria-busy={loading}
       >
         <div className="identify-form-title">
-          <span className="identify-input-step">01</span>
-          <label htmlFor="scene-description">{c.label}</label>
+          <label htmlFor={inputId}>{c.label}</label>
+          <span className="identify-mode">
+            <span aria-hidden="true" />
+            {aiEnabled ? c.ai : c.catalog}
+          </span>
         </div>
         <div className="identify-input-wrap">
           <textarea
             ref={textarea}
-            id="scene-description"
-            rows={5}
+            id={inputId}
+            rows={3}
             minLength={15}
             maxLength={1600}
             required
@@ -216,7 +242,7 @@ export function IdentifyExperience({
               source.current = 'text';
               setError('');
             }}
-            aria-describedby="scene-count"
+            aria-describedby={countId}
             aria-invalid={Boolean(error && description.trim().length < 15)}
           />
           <div className="identify-input-tools">
@@ -231,6 +257,7 @@ export function IdentifyExperience({
               onTranscript={(text) => {
                 begin();
                 source.current = 'voice';
+                revealSubmit.current = true;
                 setDescription((value) =>
                   `${value.trim()}${value.trim() ? ' ' : ''}${text}`.slice(
                     0,
@@ -241,71 +268,10 @@ export function IdentifyExperience({
               }}
               onBusyChange={setVoiceBusy}
             />
-            <span id="scene-count" className="identify-count">
+            <span id={countId} className="identify-count">
               {description.length} / 1600
             </span>
           </div>
-        </div>
-        <div className="identify-examples">
-          <span>{c.examples}</span>
-          <div>
-            {examples.map((example, i) => (
-              <button
-                type="button"
-                key={example}
-                disabled={busy}
-                onClick={() => {
-                  begin();
-                  source.current = 'example';
-                  setDescription(example);
-                  setError('');
-                  setExcluded([]);
-                  setResponse(null);
-                  textarea.current?.focus();
-                }}
-              >
-                <span aria-hidden="true">0{i + 1}</span>
-                {identifyExampleLabels[locale][i]}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="identify-filters">
-          <fieldset disabled={busy}>
-            <legend>{c.type}</legend>
-            <div>
-              {(['all', 'movie', 'tv'] as const).map((type) => (
-                <label key={type}>
-                  <input
-                    type="radio"
-                    name="identify-media-type"
-                    value={type}
-                    checked={mediaType === type}
-                    onChange={() => setMediaType(type)}
-                  />
-                  <span>{c[type]}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <label className="identify-decade">
-            {c.decade}
-            <select
-              value={decade}
-              onChange={(event) => setDecade(event.target.value)}
-              disabled={busy}
-            >
-              <option value="">{c.anyDecade}</option>
-              {[
-                2020, 2010, 2000, 1990, 1980, 1970, 1960, 1950, 1940, 1930,
-                1920,
-              ].map((year) => (
-                <option key={year} value={year}>
-                  {year}–{year + 9}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
         {excluded.length > 0 && (
           <p className="identify-excluded">
@@ -328,7 +294,12 @@ export function IdentifyExperience({
           </p>
         )}
         <div className="identify-submit-row">
-          <button className="identify-submit" type="submit" disabled={busy}>
+          <button
+            ref={submitButton}
+            className="identify-submit"
+            type="submit"
+            disabled={busy}
+          >
             {loading ? (
               <LoaderCircle className="identify-spinner" size={19} />
             ) : (
@@ -342,16 +313,75 @@ export function IdentifyExperience({
               <X size={16} />
               {c.cancel}
             </button>
-          ) : (
+          ) : description ||
+            response ||
+            excluded.length ||
+            decade ||
+            mediaType !== 'all' ? (
             <button className="identify-reset" type="button" onClick={reset}>
               <RotateCcw size={15} />
               {c.reset}
             </button>
-          )}
+          ) : null}
         </div>
-        <div className="identify-form-meta">
-          <span className="identify-mode">{aiEnabled ? c.ai : c.catalog}</span>
-          <AppLink href={path(locale, market, 'privacy')}>
+        <div className="identify-options-row">
+          <details className="identify-options">
+            <summary>
+              <SlidersHorizontal size={15} aria-hidden="true" />
+              {c.filters}
+              {(mediaType !== 'all' || decade) && (
+                <span className="identify-filter-count">
+                  {Number(mediaType !== 'all') + Number(Boolean(decade))}
+                </span>
+              )}
+              <ChevronDown
+                size={14}
+                className="identify-options-chevron"
+                aria-hidden="true"
+              />
+            </summary>
+            <div className="identify-filters">
+              <fieldset disabled={busy}>
+                <legend>{c.type}</legend>
+                <div>
+                  {(['all', 'movie', 'tv'] as const).map((type) => (
+                    <label key={type}>
+                      <input
+                        type="radio"
+                        name={`${inputId}-media-type`}
+                        value={type}
+                        checked={mediaType === type}
+                        onChange={() => setMediaType(type)}
+                      />
+                      <span>{c[type]}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <label className="identify-decade">
+                {c.decade}
+                <select
+                  value={decade}
+                  onChange={(event) => setDecade(event.target.value)}
+                  disabled={busy}
+                >
+                  <option value="">{c.anyDecade}</option>
+                  {[
+                    2020, 2010, 2000, 1990, 1980, 1970, 1960, 1950, 1940, 1930,
+                    1920,
+                  ].map((year) => (
+                    <option key={year} value={year}>
+                      {year}–{year + 9}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </details>
+          <AppLink
+            className="identify-privacy-link"
+            href={path(locale, market, 'privacy')}
+          >
             {t(locale, 'privacy')}
           </AppLink>
         </div>
@@ -359,13 +389,34 @@ export function IdentifyExperience({
           {loading ? c.loading : ''}
         </div>
       </form>
+      <div className="identify-examples">
+        <span>{c.examples}</span>
+        <div>
+          {examples.map((example, i) => (
+            <button
+              type="button"
+              key={example}
+              disabled={busy}
+              onClick={() => {
+                begin();
+                source.current = 'example';
+                setDescription(example);
+                setError('');
+                setExcluded([]);
+                setResponse(null);
+                textarea.current?.focus();
+              }}
+            >
+              <span aria-hidden="true">0{i + 1}</span>
+              {identifyExampleLabels[locale][i]}
+            </button>
+          ))}
+        </div>
+      </div>
       {response && (
-        <section
-          className="identify-results"
-          aria-labelledby="identify-results-heading"
-        >
+        <section className="identify-results" aria-labelledby={resultsId}>
           <p className="eyebrow gold">02 — Cineradar</p>
-          <h2 id="identify-results-heading" ref={resultHeading} tabIndex={-1}>
+          <h2 id={resultsId} ref={resultHeading} tabIndex={-1}>
             {visibleItems.length ? c.results : c.empty}
           </h2>
           {response.notice === 'ai_unavailable' && (

@@ -11,6 +11,7 @@ import './editorial.css';
 import './analytics.css';
 import './identify.css';
 import './voice-input.css';
+import './home-discovery.css';
 export const metadata: Metadata = {
   icons: { icon: '/icon.svg', apple: '/apple-touch-icon.png' },
   title: 'Cineradar · Find your next movie night',

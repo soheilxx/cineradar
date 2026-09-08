@@ -4,11 +4,11 @@ import { l } from './comparisons/copy';
 export const IDENTIFY_EDITORIAL_UPDATED = '2026-09-08';
 const copy = {
   nav: l(
-    'Titel vergessen?',
-    'Titre oublié ?',
-    'Titolo dimenticato?',
-    '¿Título olvidado?',
-    'Forgot the title?',
+    'KI-Titelfinder',
+    'Recherche IA',
+    'Trova titoli con l’IA',
+    'Buscador IA',
+    'AI title finder',
   ),
   eyebrow: l(
     'Deine Erinnerung. Die nächste Spur.',
@@ -32,18 +32,18 @@ const copy = {
     'Remember a scene but not the title? Describe the plot, characters or a distinctive location. Cineradar searches its catalogue for matching films and TV shows. You can then check streaming offers in your country.',
   ),
   seoTitle: l(
-    'Film oder Serie nach Beschreibung finden | Cineradar',
-    'Trouver un film ou une série par description | Cineradar',
-    'Trovare un film o una serie dalla descrizione | Cineradar',
-    'Buscar película o serie por descripción | Cineradar',
-    'Find a Movie or TV Show by Description | Cineradar',
+    'KI-Titelfinder: Filme & Serien wiederfinden | Cineradar',
+    'Recherche IA de films et séries | Cineradar',
+    'Trova titoli con l’IA: film e serie | Cineradar',
+    'Buscador de títulos con IA: películas y series | Cineradar',
+    'AI Title Finder: Find Movies & TV Shows | Cineradar',
   ),
   metaDescription: l(
-    'Titel vergessen? Beschreibe die Handlung oder diktiere deine Erinnerung. Finde mögliche Filme und Serien und prüfe, wo du sie streamen kannst.',
-    'Titre oublié ? Décrivez l’histoire ou dictez votre souvenir. Retrouvez des films et séries possibles, puis vérifiez où les regarder en streaming.',
-    'Titolo dimenticato? Descrivi la trama o detta il tuo ricordo. Trova possibili film e serie e scopri dove guardarli in streaming.',
-    '¿Olvidaste el título? Describe la trama o dicta tu recuerdo. Encuentra posibles películas y series y consulta dónde verlas en streaming.',
-    'Forgot the title? Describe the plot or dictate what you remember. Find possible films and TV shows, then check where to stream them.',
+    'KI-Titelfinder: Beschreibe oder diktiere eine Szene. Finde passende Filme und Serien und prüfe die Streamingangebote in deinem Land.',
+    'Retrouvez un film ou une série avec l’IA. Décrivez ou dictez une scène, comparez les titres proposés et consultez les offres de streaming.',
+    'Trova titoli di film e serie con l’IA. Descrivi o detta una scena, confronta i suggerimenti e controlla dove guardarli in streaming.',
+    'Buscador de títulos con IA para películas y series. Describe o dicta una escena, compara resultados y consulta dónde verlos en streaming.',
+    'AI title finder for movies and TV shows. Describe or dictate a scene, compare possible matches and check where to stream them.',
   ),
   stepsHeading: l(
     'So wird aus einer Erinnerung ein Titel',

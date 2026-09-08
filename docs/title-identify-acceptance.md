@@ -17,7 +17,16 @@ Stand: 8. September 2026. Plan und Masterprompt wurden vor der Implementierung e
 - GA4 im lokalen Debugmodus nach Einwilligung: `identify_submit` und `identify_results` mit kontrollierten Parametern, Länge, Anzahl und Modus beobachtet. Keine Beschreibung oder Transkription in Analytics-Anfragen. Vorheriger Einwilligungszustand nach der Prüfung wiederhergestellt.
 - Gesamtsuite: **122 Tests bestanden**, kein übersprungener Test. Typecheck, Lint und `VERCEL=1 npm run build:node` erfolgreich. Darunter isolierte PostgreSQL-, Quoten-, Provider-, Datenschutz- und Diktat-Lifecycletests.
 
-## Noch separat zu verifizieren
+## Überarbeiteter mobiler Einstieg: KI-Titelfinder
+
+- Startseite enthält eine eigene, direkt bedienbare Beschreibungs- und Spracheingabe neben der normalen Titelsuche auf Desktop und darunter auf Mobilgeräten. Getrennte Formulare und Zustände; keine zusätzliche Navigation nötig.
+- Die Funktionsseite beginnt mit kurzer Überschrift und Eingabe. Bestehende Einführung, Anleitung, FAQ und interne Verweise bleiben darunter im serverseitigen HTML erhalten. Die Bezeichnung und SEO-Metadaten decken Filme und Serien in allen fünf Sprachen ab; der Share-Bild-Verweis bekommt bei geänderter Beschriftung eine neue Revision.
+- „Titel finden“ steht direkt nach der Eingabe, vor den standardmäßig geschlossenen Filtern und horizontal bedienbaren Beispielen. Lange Texte scrollen innerhalb des Eingabefelds. Nach abgeschlossenem Diktat wird die Hauptaktion bei Bedarf ins Sichtfeld gebracht, ohne die Bildschirmtastatur durch einen Fokuswechsel zu öffnen.
+- Codex-Browser: Startseite und Funktionsseite in allen fünf Sprachen bei 320 CSS-Pixeln geprüft, zusätzlich 390 Pixel und Desktop mit 1.440 Pixeln. Kein horizontaler Seitenüberlauf, ein H1, genau ein Identifikationsformular je Seite und erreichbarer Datenschutzlink. Die lokale Fixture-Kennzeichnung wurde bei der Messung der Produktionsgeometrie abgezogen. Längere französische Texte wurden in der kompakten Ansicht gesondert geprüft.
+- Kontrolliertes Browser-Diktat mit 1.199 Zeichen: Text übernommen, Feldhöhe unverändert, Submit danach aktiv und innerhalb der sichtbaren 568 Pixel. Keine physische Aufnahme; Test-Doppelung durch Neuladen entfernt.
+- 30 gezielte Regressionstests bestanden, einschließlich erweiterter SSR-Prüfung beider Formularvarianten in fünf Sprachen, eindeutiger IDs und auflösbarer ARIA-Verweise. Lint, Typecheck, Sprachprüfung und Produktionsbuild erfolgreich; die vier SEO-Tests nach der neuen Share-Bild-Revision erneut bestanden.
+
+## Grenzen der Geräteprüfung
 
 Der produktive OpenAI-Textpfad und die serverseitige Audiotranskription sind für die oben genannten Stichproben belegt. Synthetische Sprache und Mikrofon-Doubles ersetzen keinen Test mit einem physischen Gerät und seiner Berechtigung. Die erfolgreichen Anfragen beweisen keine allgemeine Erkennungsquote oder vollständige KI-Abdeckung aller fünf Sprachen.
 

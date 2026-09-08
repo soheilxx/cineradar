@@ -1,4 +1,4 @@
-import { ArrowRight, AudioLines, ScanSearch } from 'lucide-react';
+import { ArrowRight, ScanSearch } from 'lucide-react';
 import type { Locale } from '@/i18n/config';
 import { countryName } from '@/i18n/config';
 import { path } from '@/i18n/routes';
@@ -20,35 +20,23 @@ export function TitleIdentify({
   return (
     <div className="identify-page">
       <header className="identify-hero">
-        <div className="identify-hero-copy">
+        <div className="identify-hero-meta">
           <p className="eyebrow gold">
-            <ScanSearch size={17} /> {copy.eyebrow}
+            <ScanSearch size={17} /> {copy.nav}
           </p>
-          <h1>{copy.headline}</h1>
-          <p className="identify-intro">{copy.introduction}</p>
-          <span className="identify-market">
-            {countryName(locale, market)} <span aria-hidden="true">·</span>{' '}
-            {t(locale, 'movie')} & {t(locale, 'tv')}
-          </span>
+          <span className="identify-market">{countryName(locale, market)}</span>
         </div>
-        <div className="identify-orbit" aria-hidden="true">
-          <div className="identify-orbit-ring" />
-          <div className="identify-orbit-ring" />
-          <span className="identify-orbit-center">
-            <AudioLines size={48} strokeWidth={1.3} />
-          </span>
-          <span className="identify-orbit-dot" />
-          <span className="identify-orbit-dot" />
-          <span className="identify-orbit-label">
-            CINE<span>RADAR</span>
-          </span>
-        </div>
+        <h1>{copy.headline}</h1>
       </header>
       <IdentifyExperience
         key={`${locale}:${market}`}
         {...{ locale, market, aiEnabled }}
         examples={copy.examples}
       />
+      <div className="identify-context">
+        <p className="eyebrow gold">{copy.eyebrow}</p>
+        <p className="identify-intro">{copy.introduction}</p>
+      </div>
       <section
         className="identify-method"
         aria-labelledby="identify-method-heading"

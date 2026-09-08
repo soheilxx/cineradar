@@ -26,7 +26,7 @@ export function identifyMetadata(locale: Locale, filtered = false): Metadata {
     c.SITE_URL,
   ).href;
   const image = new URL(
-    `/api/og?locale=${locale}&market=${defaultMarkets[locale]}&page=identify&revision=${IDENTIFY_EDITORIAL_UPDATED}`,
+    `/api/og?locale=${locale}&market=${defaultMarkets[locale]}&page=identify&revision=${IDENTIFY_EDITORIAL_UPDATED}-${sitemapHash(text.nav + text.headline).slice(0, 12)}`,
     c.SITE_URL,
   ).href;
   const published =

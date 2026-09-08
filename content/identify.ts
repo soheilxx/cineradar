@@ -2,10 +2,12 @@ import type { Locale } from '@/i18n/config';
 
 interface IdentifyCopy {
   promo: string;
+  tagline: string;
   promoDetail: string;
   label: string;
   placeholder: string;
   examples: string;
+  filters: string;
   all: string;
   movie: string;
   tv: string;
@@ -37,12 +39,13 @@ interface IdentifyCopy {
 }
 export const identifyCopy: Record<Locale, IdentifyCopy> = {
   de: {
-    promo: 'Titel vergessen?',
+    promo: 'KI-Titelfinder',
+    tagline: 'Filme & Serien per Text oder Stimme finden.',
     promoDetail: 'Beschreibe eine Szene. Finde den Film oder die Serie.',
     label: 'Woran erinnerst du dich?',
-    placeholder:
-      'Ein Mann betritt die Träume anderer Menschen. Er hat einen kleinen Kreisel, mit dem er prüft, ob er wach ist …',
+    placeholder: 'Ein Mann betritt fremde Träume. Er dreht einen Kreisel …',
     examples: 'Zum Ausprobieren',
+    filters: 'Suche eingrenzen',
     all: 'Nicht sicher',
     movie: 'Film',
     tv: 'Serie',
@@ -83,12 +86,13 @@ export const identifyCopy: Record<Locale, IdentifyCopy> = {
     },
   },
   en: {
-    promo: 'Forgot the title?',
+    promo: 'AI title finder',
+    tagline: 'Find movies & shows by text or voice.',
     promoDetail: 'Describe a scene. Find the movie or show.',
     label: 'What do you remember?',
-    placeholder:
-      'A man enters other people’s dreams. He uses a small spinning top to check whether he is awake …',
+    placeholder: 'A man enters other people’s dreams. He spins a small top …',
     examples: 'Try an example',
+    filters: 'Narrow your search',
     all: 'Not sure',
     movie: 'Movie',
     tv: 'TV show',
@@ -124,12 +128,14 @@ export const identifyCopy: Record<Locale, IdentifyCopy> = {
     },
   },
   fr: {
-    promo: 'Titre oublié ?',
+    promo: 'Recherche IA',
+    tagline: 'Films et séries : décrivez ou dictez.',
     promoDetail: 'Décrivez une scène. Retrouvez le film ou la série.',
     label: 'De quoi vous souvenez-vous ?',
     placeholder:
-      'Un homme entre dans les rêves des autres. Il utilise une petite toupie pour savoir s’il est éveillé…',
+      'Un homme entre dans les rêves des autres et fait tourner une toupie…',
     examples: 'Essayez un exemple',
+    filters: 'Affiner la recherche',
     all: 'Pas sûr',
     movie: 'Film',
     tv: 'Série',
@@ -167,12 +173,14 @@ export const identifyCopy: Record<Locale, IdentifyCopy> = {
     },
   },
   it: {
-    promo: 'Hai dimenticato il titolo?',
+    promo: 'Trova titoli con l’IA',
+    tagline: 'Trova film e serie con il testo o la voce.',
     promoDetail: 'Descrivi una scena. Ritrova il film o la serie.',
     label: 'Che cosa ricordi?',
     placeholder:
-      'Un uomo entra nei sogni degli altri. Usa una piccola trottola per capire se è sveglio…',
+      'Un uomo entra nei sogni degli altri e fa girare una trottola…',
     examples: 'Prova un esempio',
+    filters: 'Affina la ricerca',
     all: 'Non sono sicuro',
     movie: 'Film',
     tv: 'Serie',
@@ -209,12 +217,13 @@ export const identifyCopy: Record<Locale, IdentifyCopy> = {
     },
   },
   es: {
-    promo: '¿Olvidaste el título?',
+    promo: 'Buscador IA',
+    tagline: 'Encuentra películas y series con texto o voz.',
     promoDetail: 'Describe una escena. Encuentra la película o serie.',
     label: '¿Qué recuerdas?',
-    placeholder:
-      'Un hombre entra en los sueños de otras personas. Usa una pequeña peonza para comprobar si está despierto…',
+    placeholder: 'Un hombre entra en sueños ajenos y hace girar una peonza…',
     examples: 'Prueba un ejemplo',
+    filters: 'Afinar la búsqueda',
     all: 'No estoy seguro',
     movie: 'Película',
     tv: 'Serie',
