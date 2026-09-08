@@ -44,9 +44,8 @@ import { imageVariant, imageSet } from '@/domain/artwork';
 import { fold } from '@/domain/search';
 import { analyticsPrivacyCopy } from '@/content/analytics';
 import { ConsentSettingsButton } from './analytics-consent';
-import { identifyCopy } from '@/content/identify';
 import { identifyEditorial } from '@/content/identify-editorial';
-import { IdentifyExperience } from './identify-experience';
+import { HomeSearch } from './home-search';
 export function PageHeading({
   locale: _locale,
   title,
@@ -108,58 +107,34 @@ export function HomePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(siteSchema(locale, market)) }}
       />
-      <section className="home-discovery" aria-labelledby="home-heading">
-        <div className="home-discovery-grid">
-          <div className="home-discovery-main">
-            <header className="home-discovery-heading">
-              <p className="eyebrow">
-                <span className="live-dot" />
-                {countryName(locale, market)} · {t(locale, 'offers')}
-              </p>
-              <h1 id="home-heading">{t(locale, 'headline')}</h1>
-            </header>
-            <div className="home-discovery-search">
-              <Search
-                key={`${locale}:${market}:title-search`}
-                locale={locale}
-                market={market}
-                inputId="home-title-search"
-              />
-            </div>
-            <nav
-              className="home-discovery-routes"
-              aria-label={t(locale, 'browseAll')}
-            >
-              {(['movies', 'series', 'new'] as const).map((route) => (
-                <AppLink key={route} href={path(locale, market, route)}>
-                  {t(locale, route)}
-                  <ArrowUpRight size={15} />
-                </AppLink>
-              ))}
-            </nav>
-          </div>
-          <section
-            className="home-discovery-identify"
-            aria-labelledby="home-identify-heading"
-          >
-            <h2 id="home-identify-heading">
-              <Sparkles size={19} aria-hidden="true" />
-              {identifyCopy[locale].promo}
-            </h2>
-            <p className="home-identify-tagline">
-              {identifyCopy[locale].tagline}
+      <section
+        className="search-hero home-discovery"
+        aria-labelledby="home-heading"
+      >
+        <header className="hero-title home-discovery-heading">
+          <div>
+            <p className="eyebrow">
+              <span className="live-dot" />
+              {countryName(locale, market)} · {t(locale, 'offers')}
             </p>
-            <IdentifyExperience
-              key={`${locale}:${market}:home`}
-              locale={locale}
-              market={market}
-              aiEnabled={config().identifyAiEnabled}
-              examples={identifyEditorial[locale].examples}
-              variant="home"
-            />
-          </section>
-        </div>
-        <p className="home-discovery-description">{t(locale, 'subheadline')}</p>
+            <h1 id="home-heading">{t(locale, 'headline')}</h1>
+            <p>{t(locale, 'subheadline')}</p>
+          </div>
+          <span className="hero-edition" aria-hidden="true">
+            CINE
+            <br />
+            <b>RADAR</b>
+            <br />
+            {market.toUpperCase()}
+          </span>
+        </header>
+        <HomeSearch
+          key={`${locale}:${market}:home`}
+          locale={locale}
+          market={market}
+          aiEnabled={config().identifyAiEnabled}
+          examples={identifyEditorial[locale].examples}
+        />
       </section>
       <ProviderSelection {...{ locale, market, providers }} />
       {feature ? (

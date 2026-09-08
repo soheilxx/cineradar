@@ -31,12 +31,14 @@ export function IdentifyExperience({
   aiEnabled,
   examples,
   variant = 'page',
+  active = true,
 }: {
   locale: Locale;
   market: string;
   aiEnabled: boolean;
   examples: readonly string[];
   variant?: 'page' | 'home';
+  active?: boolean;
 }) {
   const c = identifyCopy[locale];
   const inputId =
@@ -63,10 +65,26 @@ export function IdentifyExperience({
   const submitButton = useRef<HTMLButtonElement>(null);
   const revealSubmit = useRef(false);
   const resultHeading = useRef<HTMLHeadingElement>(null);
+  const displayedResponse = useRef<IdentifyResponse | null>(null);
   const started = useRef(false);
   const source = useRef('text');
-  const busy = loading || voiceBusy || !ready;
+  const busy = loading || voiceBusy || !ready || !active;
   useEffect(() => {
+    if (active) return;
+    const pending = request.current;
+    request.current = null;
+    pending?.abort();
+    setLoading(false);
+    setVoiceBusy(false);
+    revealSubmit.current = false;
+    if (pending)
+      trackEvent('identify_cancel', { locale, market, trigger: 'mode_change' });
+  }, [active, locale, market]);
+  useEffect(() => {
+    if (!active) {
+      revealSubmit.current = false;
+      return;
+    }
     if (!voiceBusy && revealSubmit.current) {
       revealSubmit.current = false;
       submitButton.current?.scrollIntoView({
@@ -74,7 +92,7 @@ export function IdentifyExperience({
         behavior: 'instant',
       });
     }
-  }, [description, voiceBusy]);
+  }, [description, voiceBusy, active]);
   useEffect(
     () => () => {
       request.current?.abort();
@@ -197,7 +215,9 @@ export function IdentifyExperience({
     }
   }
   useEffect(() => {
-    if (response) {
+    if (response === displayedResponse.current) return;
+    displayedResponse.current = response;
+    if (active && response) {
       resultHeading.current?.focus({ preventScroll: true });
       resultHeading.current?.scrollIntoView({
         block: 'start',
@@ -206,7 +226,7 @@ export function IdentifyExperience({
           : 'smooth',
       });
     }
-  }, [response]);
+  }, [response, active]);
   const visibleItems =
     response?.items.filter((item) => !excluded.includes(item.card.id)) || [];
   return (
@@ -233,7 +253,7 @@ export function IdentifyExperience({
             minLength={15}
             maxLength={1600}
             required
-            disabled={loading || !ready}
+            disabled={loading || !ready || !active}
             placeholder={c.placeholder}
             value={description}
             onFocus={begin}
@@ -246,28 +266,30 @@ export function IdentifyExperience({
             aria-invalid={Boolean(error && description.trim().length < 15)}
           />
           <div className="identify-input-tools">
-            <VoiceInput
-              key={voiceKey}
-              locale={locale}
-              routeKey={`${locale}:${market}:identify`}
-              valueLength={description.length}
-              maxChars={1600}
-              serverEnabled={aiEnabled}
-              disabled={loading}
-              onTranscript={(text) => {
-                begin();
-                source.current = 'voice';
-                revealSubmit.current = true;
-                setDescription((value) =>
-                  `${value.trim()}${value.trim() ? ' ' : ''}${text}`.slice(
-                    0,
-                    1600,
-                  ),
-                );
-                setError('');
-              }}
-              onBusyChange={setVoiceBusy}
-            />
+            {active && (
+              <VoiceInput
+                key={voiceKey}
+                locale={locale}
+                routeKey={`${locale}:${market}:identify`}
+                valueLength={description.length}
+                maxChars={1600}
+                serverEnabled={aiEnabled}
+                disabled={loading}
+                onTranscript={(text) => {
+                  begin();
+                  source.current = 'voice';
+                  revealSubmit.current = true;
+                  setDescription((value) =>
+                    `${value.trim()}${value.trim() ? ' ' : ''}${text}`.slice(
+                      0,
+                      1600,
+                    ),
+                  );
+                  setError('');
+                }}
+                onBusyChange={setVoiceBusy}
+              />
+            )}
             <span id={countId} className="identify-count">
               {description.length} / 1600
             </span>

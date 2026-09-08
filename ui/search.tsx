@@ -28,6 +28,8 @@ export function Search({
   inputId,
   buttonLabel,
   onSearch,
+  placeholder,
+  active = true,
 }: {
   locale: Locale;
   market: string;
@@ -35,6 +37,8 @@ export function Search({
   inputId?: string;
   buttonLabel?: string;
   onSearch?: () => void;
+  placeholder?: string;
+  active?: boolean;
 }) {
   const [query, setQuery] = useState(initial);
   const [items, setItems] = useState<Suggestion[]>([]);
@@ -43,6 +47,7 @@ export function Search({
   const ready = useHydrated();
   const router = useRouter();
   function submitSearch() {
+    if (!active || !ready) return;
     trackEvent('search_submit', {
       locale,
       market,
@@ -57,8 +62,9 @@ export function Search({
   useEffect(() => {
     const n = ++seq.current;
     const controller = new AbortController();
-    if (query.trim().length < 2) {
+    if (!active || query.trim().length < 2) {
       setItems([]);
+      setBusy(false);
       return;
     }
     const timer = setTimeout(async () => {
@@ -69,7 +75,7 @@ export function Search({
           { signal: controller.signal },
         );
         const d = (await r.json()) as { items: Suggestion[] };
-        if (seq.current === n) {
+        if (seq.current === n && !controller.signal.aborted) {
           setItems(r.ok ? d.items : []);
           trackEvent(
             r.ok ? 'search_suggestions_view' : 'search_suggestions_error',
@@ -93,14 +99,14 @@ export function Search({
           });
         }
       } finally {
-        if (seq.current === n) setBusy(false);
+        if (seq.current === n && !controller.signal.aborted) setBusy(false);
       }
     }, 250);
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, locale, market]);
+  }, [query, locale, market, active]);
   return (
     <form
       className="search-box"
@@ -114,10 +120,12 @@ export function Search({
       <SearchIcon className="search-symbol" size={23} />
       <Combobox<Suggestion>
         modal={false}
+        disabled={!ready || !active}
         items={items}
         filter={null}
         inputValue={query}
         onInputValueChange={(value, details) => {
+          if (!active || !ready) return;
           if (
             details.reason === 'input-change' ||
             details.reason === 'clear-press'
@@ -126,7 +134,7 @@ export function Search({
         }}
         itemToStringLabel={(x) => x.label}
         onValueChange={(value) => {
-          if (value) {
+          if (active && ready && value) {
             trackEvent('search_suggestion_select', {
               locale,
               market,
@@ -142,12 +150,12 @@ export function Search({
         }}
       >
         <ComboboxInput
-          disabled={!ready}
+          disabled={!ready || !active}
           name="q"
           id={inputId}
           maxLength={120}
           aria-label={t(locale, 'searchHint')}
-          placeholder={t(locale, 'searchHint')}
+          placeholder={placeholder ?? t(locale, 'searchHint')}
           showTrigger={false}
           autoComplete="off"
           onKeyDown={(e) => {
@@ -164,7 +172,7 @@ export function Search({
         >
           {!buttonLabel && (
             <button
-              disabled={!ready}
+              disabled={!ready || !active}
               type="submit"
               className="search-submit"
               aria-label={buttonLabel || t(locale, 'search')}
@@ -174,31 +182,33 @@ export function Search({
             </button>
           )}
         </ComboboxInput>
-        <ComboboxContent>
-          <ComboboxList>
-            {(item: Suggestion) => (
-              <ComboboxItem key={item.id} value={item}>
-                <div>
-                  <strong>{item.label}</strong>
-                  <span className="hint">
-                    {' '}
-                    {item.year} · {t(locale, item.type)}
-                  </span>
-                </div>
-                <ArrowRight size={16} />
-              </ComboboxItem>
-            )}
-          </ComboboxList>
-          <button type="button" className="search-all" onClick={submitSearch}>
-            {t(locale, 'search')} <ArrowRight size={16} />
-          </button>
-        </ComboboxContent>
+        {active && (
+          <ComboboxContent>
+            <ComboboxList>
+              {(item: Suggestion) => (
+                <ComboboxItem key={item.id} value={item}>
+                  <div>
+                    <strong>{item.label}</strong>
+                    <span className="hint">
+                      {' '}
+                      {item.year} · {t(locale, item.type)}
+                    </span>
+                  </div>
+                  <ArrowRight size={16} />
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+            <button type="button" className="search-all" onClick={submitSearch}>
+              {t(locale, 'search')} <ArrowRight size={16} />
+            </button>
+          </ComboboxContent>
+        )}
       </Combobox>
       {buttonLabel && (
         <button
           type="submit"
           className="button primary comparison-search-submit"
-          disabled={!ready}
+          disabled={!ready || !active}
         >
           {buttonLabel}
           <ArrowRight size={18} />
