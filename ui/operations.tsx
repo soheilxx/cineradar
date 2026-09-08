@@ -1,10 +1,71 @@
 import { admin } from '@/lib/security';
 import { config } from '@/lib/config';
 import { db } from '@/data/db';
+import { mediaStats, type MediaState } from '@/data/media/repository';
 import { t } from '@/i18n/messages';
 import { path } from '@/i18n/routes';
 import type { Locale } from '@/i18n/config';
 import { PageHeading } from './pages';
+
+const mediaLabels: Record<
+  Locale,
+  Record<MediaState | 'title' | 'unavailable', string>
+> = {
+  de: {
+    title: 'Bildverarbeitung',
+    ready: 'Verarbeitet',
+    queued: 'In Warteschlange',
+    running: 'In Bearbeitung',
+    failed: 'Fehlgeschlagen',
+    withdrawn: 'Zurückgezogen',
+    unavailable: 'Bildstatus derzeit nicht verfügbar.',
+  },
+  en: {
+    title: 'Image processing',
+    ready: 'Processed',
+    queued: 'Queued',
+    running: 'Processing',
+    failed: 'Failed',
+    withdrawn: 'Withdrawn',
+    unavailable: 'Image status is currently unavailable.',
+  },
+  fr: {
+    title: 'Traitement des images',
+    ready: 'Traitées',
+    queued: 'En attente',
+    running: 'En cours',
+    failed: 'En échec',
+    withdrawn: 'Retirées',
+    unavailable: 'Le statut des images est momentanément indisponible.',
+  },
+  it: {
+    title: 'Elaborazione immagini',
+    ready: 'Elaborate',
+    queued: 'In coda',
+    running: 'In elaborazione',
+    failed: 'Non riuscite',
+    withdrawn: 'Ritirate',
+    unavailable: 'Lo stato delle immagini non è al momento disponibile.',
+  },
+  es: {
+    title: 'Procesamiento de imágenes',
+    ready: 'Procesadas',
+    queued: 'En cola',
+    running: 'En proceso',
+    failed: 'Fallidas',
+    withdrawn: 'Retiradas',
+    unavailable:
+      'El estado de las imágenes no está disponible en este momento.',
+  },
+};
+const mediaStates: MediaState[] = [
+  'ready',
+  'queued',
+  'running',
+  'failed',
+  'withdrawn',
+];
+
 export async function OperationsPage({
   locale,
   market,
@@ -45,8 +106,8 @@ export async function OperationsPage({
       </>
     );
   const d = await db();
-  const [jobs, budgets, ops, reports, quarantines, metrics] = await Promise.all(
-    [
+  const [jobs, budgets, ops, reports, quarantines, metrics, media] =
+    await Promise.all([
       d.query<{
         id: number;
         kind: string;
@@ -86,8 +147,8 @@ export async function OperationsPage({
       }>(
         "SELECT market,count(*) AS titles,count(*) FILTER(WHERE checked_at<now()-interval '36 hours' OR checked_at IS NULL) AS overdue,min(checked_at) AS oldest FROM snapshots GROUP BY market",
       ),
-    ],
-  );
+      c.mediaEnabled ? mediaStats(d).catch(() => null) : Promise.resolve(null),
+    ]);
   const paused = ops.rows.find((r) => r.key === 'sync')?.data.paused;
   const heartbeat = ops.rows.find((r) => r.key === 'scheduler')?.data.heartbeat;
   const healthy = heartbeat && Date.now() - Date.parse(heartbeat) < 300000;
@@ -142,6 +203,27 @@ export async function OperationsPage({
           </strong>
         </div>
       </div>
+      {c.mediaEnabled && (
+        <section className="section" aria-labelledby="media-status-heading">
+          <h2 id="media-status-heading">{mediaLabels[locale].title}</h2>
+          {media ? (
+            <div className="ops-grid">
+              {mediaStates.map((state) => (
+                <div className="panel" key={state}>
+                  <span>{mediaLabels[locale][state]}</span>
+                  <strong>
+                    {new Intl.NumberFormat(locale).format(
+                      media.find((row) => row.state === state)?.count || 0,
+                    )}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="hint">{mediaLabels[locale].unavailable}</p>
+          )}
+        </section>
+      )}
       <h2>{t(locale, 'jobs')}</h2>
       <div className="ops-grid">
         {metrics.rows.map((row) => (

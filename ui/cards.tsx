@@ -53,6 +53,7 @@ export function PosterCard({
           {card.poster ? (
             <Artwork
               src={card.poster}
+              artwork={card.posterArtwork}
               alt={title}
               width="500"
               height="750"

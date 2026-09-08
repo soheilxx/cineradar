@@ -1,4 +1,5 @@
 import type { Locale } from '../i18n/config';
+import type { MediaKind, StoredArtwork } from './media';
 export type MediaType = 'movie' | 'tv';
 export type OfferType = 'subscription' | 'addon' | 'free' | 'rent' | 'buy';
 export type Availability =
@@ -41,6 +42,8 @@ export interface Title {
   runtime: number | null;
   poster: string | null;
   backdrop: string | null;
+  artwork?: Partial<Record<MediaKind, StoredArtwork>>;
+  artworkRevision?: string;
   genres: Genre[];
   rating: number | null;
   votes: number;

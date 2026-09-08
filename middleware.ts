@@ -86,10 +86,11 @@ export function middleware(request: NextRequest) {
     );
   if (dev) response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   if (
-    request.nextUrl.pathname.startsWith('/api/') ||
-    /(merkliste|watchlist|ma-liste|mi-lista|operations|betrieb|exploitation|gestione|operaciones)/.test(
-      request.nextUrl.pathname,
-    )
+    !pathname.startsWith('/media/') &&
+    (request.nextUrl.pathname.startsWith('/api/') ||
+      /(merkliste|watchlist|ma-liste|mi-lista|operations|betrieb|exploitation|gestione|operaciones)/.test(
+        request.nextUrl.pathname,
+      ))
   )
     response.headers.set('Cache-Control', 'private, no-store');
   return response;

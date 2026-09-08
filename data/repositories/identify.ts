@@ -1,4 +1,5 @@
 import { db, type Database } from '../db';
+import { withTitleArtwork } from '../media/project';
 import { config } from '../../lib/config';
 import { emptySnapshot, freshness } from '../../domain/offers';
 import type { Title, Snapshot } from '../../domain/types';
@@ -111,22 +112,24 @@ export async function identifyCandidates(
     title: fold(name.title),
   }));
   if (!terms.length && !hypotheses.length) return [];
-  const result = await (database ?? (await db())).query<CandidateRow>(
-    candidateSql,
-    [
-      request.locale,
-      JSON.stringify(terms),
-      JSON.stringify(hypotheses),
-      request.mediaType ?? 'all',
-      request.decade ?? null,
-      request.excludedIds ?? [],
-      request.market,
-      JSON.stringify(identifyPhrases(request)),
-    ],
+  const connection = database ?? (await db());
+  const result = await connection.query<CandidateRow>(candidateSql, [
+    request.locale,
+    JSON.stringify(terms),
+    JSON.stringify(hypotheses),
+    request.mediaType ?? 'all',
+    request.decade ?? null,
+    request.excludedIds ?? [],
+    request.market,
+    JSON.stringify(identifyPhrases(request)),
+  ]);
+  const titles = await withTitleArtwork(
+    result.rows.map((row) => row.data),
+    connection,
   );
-  return result.rows.map((row) => ({
+  return result.rows.map((row, index) => ({
     item: {
-      title: row.data,
+      title: titles[index],
       snapshot: {
         ...emptySnapshot(row.data.id, request.market),
         availability: row.availability ?? 'unchecked',

@@ -6,11 +6,13 @@ import { t } from '@/i18n/messages';
 import type { Locale } from '@/i18n/config';
 import { SaveButton } from './save-button';
 import { imageSet } from '@/domain/artwork';
+import type { StoredArtwork } from '@/domain/media';
 import { trackEvent } from '@/lib/analytics';
 export interface FeaturedTitle {
   id: string;
   title: string;
   image: string;
+  artwork?: StoredArtwork;
   href: string;
   year: number | null;
   type: 'movie' | 'tv';
@@ -45,7 +47,7 @@ export function FeaturedSpotlight({
         key={item.image}
         className="feature-image"
         src={item.image}
-        srcSet={imageSet(item.image, [300, 780, 1280])}
+        srcSet={imageSet(item.image, [300, 780, 1280], item.artwork)}
         sizes="(max-width: 680px) 100vw, 65vw"
         alt=""
         width="1280"

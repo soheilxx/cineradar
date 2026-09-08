@@ -147,6 +147,9 @@ export function HomePage({
               title: entry.title.localizations[locale].title,
               image:
                 entry.title.backdrop || entry.title.poster || '/cinema.webp',
+              artwork: entry.title.backdrop
+                ? entry.title.artwork?.backdrop
+                : entry.title.artwork?.poster,
               href: titlePath(entry, locale, market),
               year: entry.title.year,
               type: entry.title.type,
@@ -557,8 +560,8 @@ export function DetailPage({
         {d.backdrop && (
           <img
             className="detail-backdrop"
-            src={imageVariant(d.backdrop, 780)}
-            srcSet={imageSet(d.backdrop, [300, 780, 1280])}
+            src={imageVariant(d.backdrop, 780, d.artwork?.backdrop)}
+            srcSet={imageSet(d.backdrop, [300, 780, 1280], d.artwork?.backdrop)}
             sizes="100vw"
             fetchPriority="high"
             alt=""
@@ -570,8 +573,8 @@ export function DetailPage({
         <div className="detail-poster">
           {d.poster ? (
             <img
-              src={imageVariant(d.poster, 342)}
-              srcSet={imageSet(d.poster, [185, 342, 500])}
+              src={imageVariant(d.poster, 342, d.artwork?.poster)}
+              srcSet={imageSet(d.poster, [185, 342, 500], d.artwork?.poster)}
               sizes="(max-width:700px) 90px, 200px"
               alt={l.title}
               width="500"

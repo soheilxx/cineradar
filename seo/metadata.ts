@@ -104,7 +104,7 @@ export async function metadata(
     c.SITE_URL,
   ).href;
   const imageUrl = new URL(
-    `/api/og?locale=${locale}&market=${canonicalMarket}&page=${key}${tail ? '&tail=' + encodeURIComponent(tail) : ''}${item ? '&id=' + encodeURIComponent(item.title.id) : ''}&revision=${item?.title.revision || 'editorial'}&v=${OG_IMAGE_VERSION}`,
+    `/api/og?locale=${locale}&market=${canonicalMarket}&page=${key}${tail ? '&tail=' + encodeURIComponent(tail) : ''}${item ? '&id=' + encodeURIComponent(item.title.id) : ''}&revision=${encodeURIComponent(item?.title.revision || 'editorial')}${item?.title.artworkRevision ? '&artwork=' + encodeURIComponent(item.title.artworkRevision) : ''}&v=${OG_IMAGE_VERSION}`,
     c.SITE_URL,
   ).href;
   const landing = isIndexableLanding(key, tail);

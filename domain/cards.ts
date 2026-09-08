@@ -1,6 +1,7 @@
 import type { CatalogItem, Provider } from './types';
 import type { Locale } from '../i18n/config';
 import { activeOffers } from './offers';
+import type { StoredArtwork } from './media';
 export interface CardItem {
   id: string;
   title: string;
@@ -9,6 +10,7 @@ export interface CardItem {
   year: number | null;
   runtime: number | null;
   poster: string | null;
+  posterArtwork?: StoredArtwork;
   rating: number | null;
   providers: Pick<Provider, 'id' | 'name'>[];
   availability: CatalogItem['snapshot']['availability'];
@@ -26,6 +28,9 @@ export function catalogCard(item: CatalogItem, locale: Locale): CardItem {
     year: item.title.year,
     runtime: item.title.runtime,
     poster: item.title.poster,
+    ...(item.title.artwork?.poster
+      ? { posterArtwork: item.title.artwork.poster }
+      : {}),
     rating: item.title.rating,
     providers: [
       ...new Map(

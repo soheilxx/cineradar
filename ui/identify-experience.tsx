@@ -466,6 +466,7 @@ export function IdentifyExperience({
                 >
                   <Artwork
                     src={card.poster}
+                    artwork={card.posterArtwork}
                     alt=""
                     width={185}
                     height={278}

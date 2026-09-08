@@ -4,6 +4,7 @@ import { equal, json } from '@/lib/security';
 import { db } from '@/data/db';
 import { tick } from '@/jobs/worker';
 import { publishSitemaps } from '@/seo/sitemap-publish';
+import { runMediaBatch } from '@/jobs/media';
 export const maxDuration = 300;
 export async function POST(req: Request) {
   const key = config().CRON_SECRET;
@@ -29,6 +30,12 @@ export async function POST(req: Request) {
   await schedule();
   let completed = 0;
   let failed = 0;
+  let media: Awaited<ReturnType<typeof runMediaBatch>> | { error: true };
+  try {
+    media = await runMediaBatch();
+  } catch {
+    media = { error: true };
+  }
   if (config().SYNC_ENABLED === 'true') {
     const deadline = Date.now() + 45000;
     const results = await Promise.allSettled(
@@ -54,8 +61,14 @@ export async function POST(req: Request) {
     );
   }
   return json(
-    { scheduled: config().SYNC_ENABLED === 'true', completed, failed, sitemap },
-    failed || sitemap.state === 'failed' ? 503 : 200,
+    {
+      scheduled: config().SYNC_ENABLED === 'true',
+      completed,
+      failed,
+      sitemap,
+      media,
+    },
+    failed || sitemap.state === 'failed' || 'error' in media ? 503 : 200,
   );
 }
 export const GET = POST;

@@ -16,6 +16,7 @@ import type {
 } from '../../domain/types';
 import { db, type Database } from '../db';
 import { publicCache } from '../cache';
+import { withTitleArtwork } from '../media/project';
 import { config } from '../../lib/config';
 import { emptySnapshot, freshness } from '../../domain/offers';
 import { filterCatalog, fold, parseSearchQuery } from '../../domain/search';
@@ -68,12 +69,22 @@ export async function catalog(
   f: Filters = {},
   limit = 24,
 ): Promise<{ items: CatalogItem[]; total: number; unavailable: boolean }> {
-  if (config().APP_MODE !== 'live' || f.mine?.length || f.q?.trim())
-    return loadCatalog(locale, market, f, limit);
-  return publicCache(
-    'catalog:' + JSON.stringify([locale, market, f, limit]),
-    () => loadCatalog(locale, market, f, limit),
-  );
+  const result = await (config().APP_MODE !== 'live' ||
+  f.mine?.length ||
+  f.q?.trim()
+    ? loadCatalog(locale, market, f, limit)
+    : publicCache('catalog:' + JSON.stringify([locale, market, f, limit]), () =>
+        loadCatalog(locale, market, f, limit),
+      ));
+  // Resolve after the public cache so withdrawal is not delayed by cached cards.
+  const titles = await withTitleArtwork(result.items.map((item) => item.title));
+  return {
+    ...result,
+    items: result.items.map((item, index) => ({
+      ...item,
+      title: titles[index],
+    })),
+  };
 }
 export async function loadCatalog(
   locale: Locale,
@@ -208,13 +219,14 @@ export async function getTitle(
       ) || null
     );
   if (!config().DATABASE_URL) return null;
-  const { rows } = await (
-    await db()
-  ).query<CatalogRow>(
+  const connection = await db();
+  const { rows } = await connection.query<CatalogRow>(
     "SELECT t.data,s.availability,s.checked_at,s.attempt_at,s.error_code,s.revision,COALESCE((SELECT jsonb_agg(o.data) FROM offers o WHERE o.title_id=t.id AND o.market=$2 AND(o.expires_at IS NULL OR o.expires_at>=now())),'[]'::jsonb) offers FROM titles t LEFT JOIN snapshots s ON s.title_id=t.id AND s.market=$2 WHERE t.id=$1",
     [id, market],
   );
-  return rows[0] ? mapRow(rows[0], market) : null;
+  if (!rows[0]) return null;
+  const [title] = await withTitleArtwork([rows[0].data], connection);
+  return mapRow({ ...rows[0], data: title }, market);
 }
 export async function providers(market: string): Promise<Provider[]> {
   return (await providerStatus(market)).items;

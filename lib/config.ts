@@ -30,6 +30,27 @@ const envSchema = z.object({
     .regex(/^[a-zA-Z0-9._-]{1,100}$/)
     .default('gpt-4o-mini-transcribe'),
   IDENTIFY_AI_ENABLED: z.enum(['true', 'false']).default('false'),
+  MEDIA_ENABLED: z.enum(['true', 'false']).default('false'),
+  BLOB_STORE_ID: z.string().optional(),
+  BLOB_READ_WRITE_TOKEN: z.string().optional(),
+  MEDIA_DOWNLOADS_PER_MINUTE: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(120)
+    .default(60),
+  MEDIA_MAX_BYTES: z.coerce
+    .number()
+    .int()
+    .min(100000)
+    .max(20000000)
+    .default(10000000),
+  MEDIA_MAX_PIXELS: z.coerce
+    .number()
+    .int()
+    .min(1000000)
+    .max(60000000)
+    .default(40000000),
   IDENTIFY_DAILY_LIMIT: z.coerce.number().int().nonnegative().default(200),
   IDENTIFY_MONTHLY_LIMIT: z.coerce.number().int().nonnegative().default(4000),
   ADMIN_KEY: z.string().optional(),
@@ -113,6 +134,7 @@ export function config(
     throw new Error('Missing configuration: ' + missing.join(', '));
   return {
     ...c,
+    mediaEnabled: c.MEDIA_ENABLED === 'true' && c.APP_MODE === 'live',
     identifyAiEnabled:
       c.IDENTIFY_AI_ENABLED === 'true' && Boolean(c.OPENAI_API_KEY),
     analyticsEnabled:

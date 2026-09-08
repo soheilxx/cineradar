@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { db, type Database } from '../data/db';
+import { withTitleArtwork } from '../data/media/project';
 import { config } from '../lib/config';
 import type { Title } from '../domain/types';
 import { locales } from '../i18n/config';
@@ -88,6 +89,7 @@ export function buildSitemapEntries(
           runtime: title.runtime,
           poster: title.poster,
           backdrop: title.backdrop,
+          artworkRevision: title.artworkRevision,
           genres: title.genres,
           cast: title.cast,
           seasons: title.seasons,
@@ -302,8 +304,16 @@ export async function publishSitemaps(
       existingArtifacts.rows.map((a) => [a.name, a]),
     );
     const origin = new URL(c.SITE_URL).origin;
+    const titles = await withTitleArtwork(
+      source.rows.map((row) => row.data),
+      database,
+    );
+    const projectedRows = source.rows.map((row, index) => ({
+      ...row,
+      data: titles[index],
+    }));
     const entries = assignSitemapRevisions(
-      buildSitemapEntries(source.rows, origin, c.markets, now),
+      buildSitemapEntries(projectedRows, origin, c.markets, now),
       previous.rows,
       now,
     );
