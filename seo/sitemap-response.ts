@@ -28,7 +28,7 @@ export async function serveSitemap(
     return unavailable();
   if (
     name &&
-    !/^sitemap-(?:movies|series|landings|providers|topics|comparisons)-[a-z]{2}(?:-[a-z]{2})?-\d{4,}-[a-f0-9]{20}\.xml$/.test(
+    !/^sitemap-(?:movies|series|landings|providers|topics|comparisons|calendars)-[a-z]{2}(?:-[a-z]{2})?-\d{4,}-[a-f0-9]{20}\.xml$/.test(
       name,
     )
   )
