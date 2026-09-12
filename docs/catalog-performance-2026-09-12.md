@@ -49,7 +49,7 @@ Alle drei neuen Indizes wurden anschließend mit `indisvalid=true` und `indisrea
 
 Die allgemeine Shelf verwendet nun den passenden Index `offers_market_title_validity`; der zwischenzeitliche Fehlplan ist beseitigt. Die Anbieterabfrage benötigt in diesen Stichproben etwa 88–89 % weniger Datenbankzeit. Das bisherige Home-Abfragemuster benötigt etwa 45–51 % weniger Zeit.
 
-Die abschließende neue Home-Datenstrecke mit selektiv erhaltener Windowzählung, parallel gestarteten Providern und vier statt acht Rankingabfragen dauerte 1.425 ms; alle acht Shelves lieferten jeweils zwölf Titel. Ein unmittelbarer Cachetreffer dauerte 8 ms. Die Diagnose verwendete die bestehende lokale PostgreSQL-Konfiguration; dort war die Artworkfunktion deaktiviert. Die Bündelung der frischen Artworkabfrage ist deshalb separat durch den Transporttest belegt und noch über das finale App-Deployment zu messen.
+Die abschließende neue Home-Datenstrecke mit selektiv erhaltener Windowzählung, parallel gestarteten Providern und vier statt acht Rankingabfragen dauerte 1.425 ms; alle acht Shelves lieferten jeweils zwölf Titel. Ein unmittelbarer Cachetreffer dauerte 8 ms. Die Diagnose verwendete die bestehende lokale PostgreSQL-Konfiguration; dort war die Artworkfunktion deaktiviert. Die Bündelung der frischen Artworkabfrage ist deshalb separat durch den Transporttest belegt. Die nachfolgende Live-Messung der vollständigen App ist unten ausgewiesen.
 
 ## Live-GETs nach den Indexmigrationen, vor App-Deployment
 
@@ -61,7 +61,39 @@ Gleiche curl-Methode wie bei der Ausgangsmessung; die Dokumentgrößen blieben i
 | `/en/us/` | 3,017 s | 0,279 / 0,249 s | 5,121 s | 2,769 / 2,779 s |
 | `/fr/fr/` | 1,584 s | 0,274 / 0,255 s | 3,879 s | 2,954 / 2,772 s |
 
-Die ersten Abrufe sind gegenüber der ursprünglichen Messung schneller; wiederholte vollständige HTML-Streams liegen weiterhin bei rund 2,77–2,95 Sekunden. Für diese warmen Dokumentabrufe lässt sich aus der Indexmigration allein noch kein deutlicher Gewinn ableiten. Die neue Artworkbündelung und die UI-Navigationsänderungen benötigen die anschließende App-Auslieferung und Browserprüfung.
+Die ersten Abrufe sind gegenüber der ursprünglichen Messung schneller; wiederholte vollständige HTML-Streams liegen weiterhin bei rund 2,77–2,95 Sekunden. Für diese warmen Dokumentabrufe lässt sich aus der Indexmigration allein noch kein deutlicher Gewinn ableiten. Die Auslieferung und Browserprüfung der neuen Artworkbündelung und UI-Navigation standen zu diesem Messzeitpunkt noch aus.
+
+## Finale Live-GETs nach App-Deployment
+
+Der Hauptagent bestätigte Commit `fa4b32c`, Deployment `dpl_3zxvSWnoUX2R9qZ1LKp2fKGScWwr` und den produktiven Alias `https://cineradar.tv`. Anschließend wurden erneut drei vollständige GETs pro Route mit derselben curl-Methode ohne angeforderte Kompression ausgeführt. Alle neun Antworten hatten HTTP-Status 200.
+
+| Route | TTFB, erster Abruf | TTFB, weitere Abrufe | Gesamtzeit, erster Abruf | Gesamtzeit, weitere Abrufe | HTML-Bytes |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `/de/de/` | 2,295 s | 0,334 / 0,274 s | 4,494 s | 3,201 / 2,771 s | 549.679 |
+| `/en/us/` | 2,215 s | 0,257 / 0,277 s | 4,496 s | 2,861 / 2,881 s | 571.351 |
+| `/fr/fr/` | 1,431 s | 0,393 / 0,447 s | 3,737 s | 2,902 / 3,015 s | 547.745 |
+
+Gegenüber den ersten Abrufen der ursprünglichen Messreihe sank die Zeit bis zum ersten Byte in diesen Stichproben um 28 % (de), 49 % (en) und 55 % (fr). Die Zeit für das vollständige erste Dokument sank um 19 %, 25 % und 27 %. Die wiederholten vollständigen Abrufe liegen dagegen bei 2,77–3,20 Sekunden und zeigen weiterhin **keinen konsistenten Geschwindigkeitsgewinn** gegenüber der ursprünglichen Spanne von 2,72–3,25 Sekunden.
+
+Die Reihen wurden zeitlich getrennt gemessen; Zustand von Serverprozess, Datenbank-/Anwendungscaches und Netz waren nicht kontrolliert. Deshalb belegen die ersten Abrufe eine beobachtete Verbesserung in diesen Stichproben, jedoch keinen isolierten, garantierten Kaltstartgewinn. Gemessen wurde das komplette unkomprimiert angeforderte HTML-Dokument, nicht LCP oder eine bereits vorbereitete Clientnavigation. Die gezielten Datenbankpläne und Tests liefern den getrennten Nachweis für weniger Datenbankarbeit und korrektes Navigationsverhalten.
+
+## Zusätzlicher Befund: wiederholte Landing-Metadatenabfrage
+
+Die Untersuchung des verbleibenden wiederholten Delays zeigte anschließend einen separaten Engpass: `metadata()` wartet für öffentliche, ungefilterte Landingpages auf `landingAlternates()`. Dessen Abfrage zählt die möglichen Katalogseiten für alle fünf Sprachen und fünf Länder gemeinsam; vor dieser Korrektur wurde dieselbe Berechnung für jeden einzelnen Seitenabruf erneut ausgeführt. Damit löste auch ein reiner Sprach- oder Landwechsel die Berechnung aller 25 Kontexte nochmals aus.
+
+Die SQL-Abfrage und ihre Eligibility-Regeln bleiben unverändert. Ihr erfolgreiches Ergebnis wird nun strikt 20 Sekunden ab Abschluss der Abfrage im Prozess gespeichert. Gleichzeitige Aufrufer teilen eine laufende Abfrage. Der global auf 128 Einträge begrenzte LRU-Cache unterscheidet Datenbank-Objektidentität, aktivierte Länder, Origin, Route, Tail und Seitennummer. Die aktuelle Besuchersprache bzw. das aktuelle Land brauchen keinen zusätzlichen Schlüssel, weil das Ergebnis bereits sämtliche unterstützten Kombinationen enthält. Ergebnisse werden pro Aufrufer kopiert. Fehler werden nicht gespeichert; nach Ablauf gibt es keinen Rückgriff auf veraltete Eligibility-Daten. Verdrängte laufende Abfragen dürfen bei späterem Abschluss weder den Cache vergrößern noch einen neueren Eintrag ersetzen.
+
+Read-only-Nachweis mit der produktiven Datenbank und genau derselben Home-Landingabfrage:
+
+| Aufruf | Dauer | Neue Datenbankabfragen | Alternates |
+| --- | ---: | ---: | ---: |
+| Ungecachte Abfrage, Lauf 1 | 2.891,839 ms | 1 | 25 |
+| Ungecachte Abfrage, Lauf 2 | 2.601,135 ms | 1 | 25 |
+| Erster Cacheaufruf mit 25 gleichzeitigen Aufrufern | 2.636,007 ms | 1 insgesamt | je 25 |
+| Anschließender Cachetreffer, Lauf 1 | 0,069 ms | 0 | 25 |
+| Anschließender Cachetreffer, Lauf 2 | 0,019 ms | 0 | 25 |
+
+Dies belegt die Wiederverwendung der aufwendigen Metadatenberechnung innerhalb desselben Prozesses und TTL-Fensters. Es ist keine garantierte Gesamtseiten-Beschleunigung: Der erste Aufruf eines Prozesses bzw. einer abgelaufenen Landing bleibt eine echte Datenbankabfrage. Die oben aufgeführten Live-GETs für Commit `fa4b32c` wurden vor dieser zusätzlichen Korrektur gemessen; ihre abschließende Live-Prüfung folgt mit dem nächsten Deployment.
 
 ## Prüfung
 
@@ -70,6 +102,7 @@ Die ersten Abrufe sind gegenüber der ursprünglichen Messung schneller; wiederh
 - Die bestehenden SQL-Rankingfälle prüfen zusätzlich, dass Shelves ohne Gesamtzählung dieselben ersten fünf Titel liefern.
 - Nach dem zusätzlichen Index und der Queryplan-Anpassung wurden die fünf SQL-Rankingtests und der Cachetest erneut erfolgreich ausgeführt. Der Neon-Mock unterstützt auch den parallel integrierten Transaktions-Timeout.
 - TypeScript und Oxlint für die geänderte Navigations-/Katalogstrecke bestanden.
-- `test/e2e/navigation-performance.spec.ts` ergänzt einen verzögerten Sprachwechsel mit optimistischer Anzeige sowie Filter-/Back-/Forward-Prüfung. Die Browserausführung erfolgt durch den Hauptagenten.
+- `test/e2e/navigation-performance.spec.ts` ergänzt einen verzögerten Sprachwechsel mit optimistischer Anzeige sowie Filter-/Back-/Forward-Prüfung. Der Hauptagent meldete sechs erfolgreiche Browserprüfungen und eine erfolgreiche mobile CUA-Prüfung.
+- Sechs zusätzliche Landing-Cachetests decken parallele Aufrufer, TTL ab Queryabschluss, Fehler-/Staleverhalten, unveränderliche Rückgaben, sämtliche Kontextschlüssel, LRU-Grenze und verspätete Antworten verdrängter Abfragen ab. Die bestehenden SQL-Pagination-/Eligibilitytests verwenden den unveränderten ungecachten Loader, damit ihre unmittelbar aufeinanderfolgenden Fixtureänderungen weiterhin geprüft werden.
 
-Die Datenbankindizes sind abschließend gemessen. Eine abschließende Live-Messung und Browserprüfung nach Deployment der App-Änderungen steht noch aus.
+Die Datenbank- und Live-GET-Nachmessungen für Commit `fa4b32c` sind abgeschlossen. Für den anschließend ergänzten Landing-Metadatencache steht die Live-Prüfung des nächsten Deployments noch aus. Die Angaben zur Browserprüfung stammen vom Hauptagenten; dieses Teilprojekt führte ausschließlich lesende HTTP-/Datenbankdiagnosen und lokale Tests aus.

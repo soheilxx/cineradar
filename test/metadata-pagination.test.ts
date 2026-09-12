@@ -2,7 +2,8 @@ import { after, before, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PGlite } from '@electric-sql/pglite';
 import type { Database } from '../data/db';
-import { landingAlternates } from '../seo/landings';
+// These SQL tests mutate fixtures between reads; exercise uncached eligibility.
+import { loadLandingAlternates as landingAlternates } from '../seo/landings';
 import { missingCatalogPage, routeQuery } from '../seo/routing';
 
 const origin = 'https://cineradar.tv';

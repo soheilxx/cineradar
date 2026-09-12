@@ -11,7 +11,84 @@ export function isIndexableLanding(key: RouteKey, tail: string) {
   );
 }
 
+type AlternateLinks = Record<string, string>;
+type CacheEntry = {
+  expires: number;
+  value?: AlternateLinks;
+  pending?: Promise<AlternateLinks>;
+};
+const TTL_MS = 20000;
+const MAX_ENTRIES = 128;
+const databaseIds = new WeakMap<Database, number>();
+let nextDatabaseId = 0;
+const alternateCache = new Map<string, CacheEntry>();
+
 export async function landingAlternates(
+  database: Database,
+  origin: string,
+  markets: string[],
+  key: RouteKey,
+  tail: string,
+  page: number,
+) {
+  // Metadata calls this only for public, unfiltered indexable landings. One
+  // query already covers every enabled language/market, so context switches
+  // can reuse it without putting the visitor's current context in the key.
+  let databaseId = databaseIds.get(database);
+  if (databaseId === undefined) {
+    databaseId = ++nextDatabaseId;
+    databaseIds.set(database, databaseId);
+  }
+  const marketSnapshot = [...markets];
+  const cacheKey = JSON.stringify([
+    databaseId,
+    origin,
+    [...marketSnapshot].sort(),
+    key,
+    tail,
+    page,
+  ]);
+  const cached = alternateCache.get(cacheKey);
+  if (cached && (cached.pending || cached.expires > Date.now())) {
+    // Refresh LRU order; callers receive their own map, never the cached map.
+    alternateCache.delete(cacheKey);
+    alternateCache.set(cacheKey, cached);
+    return { ...(cached.pending ? await cached.pending : cached.value) };
+  }
+  const entry: CacheEntry = { expires: 0 };
+  entry.pending = loadLandingAlternates(
+    database,
+    origin,
+    marketSnapshot,
+    key,
+    tail,
+    page,
+  ).then(
+    (value) => {
+      // An evicted in-flight request must not repopulate the bounded cache.
+      if (alternateCache.get(cacheKey) === entry) {
+        entry.value = value;
+        entry.expires = Date.now() + TTL_MS;
+        entry.pending = undefined;
+      }
+      return value;
+    },
+    (error: unknown) => {
+      if (alternateCache.get(cacheKey) === entry)
+        alternateCache.delete(cacheKey);
+      throw error;
+    },
+  );
+  alternateCache.delete(cacheKey);
+  alternateCache.set(cacheKey, entry);
+  if (alternateCache.size > MAX_ENTRIES)
+    alternateCache.delete(alternateCache.keys().next().value!);
+  // No stale fallback: failed/expired eligibility is recomputed or fails closed
+  // through metadata's existing error handling.
+  return { ...(await entry.pending) };
+}
+
+export async function loadLandingAlternates(
   database: Database,
   origin: string,
   markets: string[],
