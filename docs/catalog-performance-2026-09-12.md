@@ -93,7 +93,7 @@ Read-only-Nachweis mit der produktiven Datenbank und genau derselben Home-Landin
 | Anschließender Cachetreffer, Lauf 1 | 0,069 ms | 0 | 25 |
 | Anschließender Cachetreffer, Lauf 2 | 0,019 ms | 0 | 25 |
 
-Dies belegt die Wiederverwendung der aufwendigen Metadatenberechnung innerhalb desselben Prozesses und TTL-Fensters. Es ist keine garantierte Gesamtseiten-Beschleunigung: Der erste Aufruf eines Prozesses bzw. einer abgelaufenen Landing bleibt eine echte Datenbankabfrage. Die oben aufgeführten Live-GETs für Commit `fa4b32c` wurden vor dieser zusätzlichen Korrektur gemessen; ihre abschließende Live-Prüfung folgt mit dem nächsten Deployment.
+Dies belegt die Wiederverwendung der aufwendigen Metadatenberechnung innerhalb desselben Prozesses und TTL-Fensters. Es ist keine garantierte Gesamtseiten-Beschleunigung: Der erste Aufruf eines Prozesses bzw. einer abgelaufenen Landing bleibt eine echte Datenbankabfrage. Die oben aufgeführten Live-GETs für Commit `fa4b32c` wurden vor dieser zusätzlichen Korrektur gemessen; die abschließende Live-Prüfung ist unten ergänzt.
 
 ## Prüfung
 
@@ -105,4 +105,16 @@ Dies belegt die Wiederverwendung der aufwendigen Metadatenberechnung innerhalb d
 - `test/e2e/navigation-performance.spec.ts` ergänzt einen verzögerten Sprachwechsel mit optimistischer Anzeige sowie Filter-/Back-/Forward-Prüfung. Der Hauptagent meldete sechs erfolgreiche Browserprüfungen und eine erfolgreiche mobile CUA-Prüfung.
 - Sechs zusätzliche Landing-Cachetests decken parallele Aufrufer, TTL ab Queryabschluss, Fehler-/Staleverhalten, unveränderliche Rückgaben, sämtliche Kontextschlüssel, LRU-Grenze und verspätete Antworten verdrängter Abfragen ab. Die bestehenden SQL-Pagination-/Eligibilitytests verwenden den unveränderten ungecachten Loader, damit ihre unmittelbar aufeinanderfolgenden Fixtureänderungen weiterhin geprüft werden.
 
-Die Datenbank- und Live-GET-Nachmessungen für Commit `fa4b32c` sind abgeschlossen. Für den anschließend ergänzten Landing-Metadatencache steht die Live-Prüfung des nächsten Deployments noch aus. Die Angaben zur Browserprüfung stammen vom Hauptagenten; dieses Teilprojekt führte ausschließlich lesende HTTP-/Datenbankdiagnosen und lokale Tests aus.
+Die Datenbank- und Live-GET-Nachmessungen für Commit `fa4b32c` sind abgeschlossen. Auch die unten dokumentierte Live-Prüfung des anschließend ergänzten Landing-Metadatencaches ist abgeschlossen. Die Angaben zur Browserprüfung stammen vom Hauptagenten; dieses Teilprojekt führte ausschließlich lesende HTTP-/Datenbankdiagnosen und lokale Tests aus.
+## Abschließende Live-Prüfung mit Metadatencache
+
+Am 12.09.2026 wurde Commit `3b93e22` auf dem produktiven Alias `https://cineradar.tv` bestätigt: Deployment `dpl_BTBk2MX6GUUZihG4Yfq9U35oKcpd`, Status Ready. Direkt aufeinanderfolgende GETs mit `curl --compressed`, wie bei browserüblicher Übertragung:
+
+| Reihenfolge | Route | Status | TTFB | Vollständiges Dokument |
+| --- | --- | --- | --- | --- |
+| 1 | `/de/de/` | 200 | 1,737 s | 4,029 s |
+| 2 | `/en/us/` | 200 | 1,878 s | 1,903 s |
+| 3 | `/de/de/` | 200 | 0,439 s | 0,459 s |
+| 4 | `/en/us/` | 200 | 0,379 s | 0,401 s |
+
+Der verbleibende schnelle Wechsel profitiert damit auch im vollständigen Live-HTML von der wiederverwendeten SEO-Abfrage. Der erste Aufbau eines Prozesses oder ein abgelaufener 20-Sekunden-Eintrag kann weiterhin eine vollständige Abfrage benötigen. Die Messwerte sind Stichproben und keine garantierte Ladezeit für jedes Gerät oder Netz. Unmittelbar vor diesem Cachefix lagen zwei komprimierte Abrufe bei 4,195 s (de) und 4,068 s (en); die frühere unkomprimierte Messreihe ist deshalb separat ausgewiesen.
