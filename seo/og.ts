@@ -1,5 +1,5 @@
 // Template and wording changes invalidate share-image caches independently of catalogue revisions.
-export const OG_IMAGE_VERSION = '2026-09-08-3';
+export const OG_IMAGE_VERSION = '2026-09-12-calendar';
 
 export function ogTitleFontSize(title: string) {
   if (title.length <= 60) return 72;

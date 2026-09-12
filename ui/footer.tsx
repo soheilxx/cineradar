@@ -99,16 +99,10 @@ export function Footer({ locale, market }: { locale: Locale; market: string }) {
         <div className="footer-colophon">
           <p>© {new Date().getUTCFullYear()} Cineradar · Wiresoft AG</p>
           <div>
-            <AppLink href="https://www.themoviedb.org/">TMDB</AppLink>
-            <AppLink href="https://docs.movieofthenight.com/">
-              Streaming Availability API by Movie of the Night
-            </AppLink>
-            {config().tvmazeEnabled && (
-              <AppLink href="https://www.tvmaze.com/api">TVmaze</AppLink>
-            )}
-            {config().omdbEnabled && (
-              <AppLink href="https://www.omdbapi.com/">OMDb</AppLink>
-            )}
+            <span>TMDB</span>
+            <span>Streaming Availability API by Movie of the Night</span>
+            {config().tvmazeEnabled && <span>TVmaze</span>}
+            {config().omdbEnabled && <span>OMDb</span>}
           </div>
         </div>
       </div>

@@ -9,11 +9,11 @@ export const episodeCopy = {
     'Series calendar',
   ),
   intro: l(
-    'Neue Folgen, nächste Staffeln und ihre angekündigten Sendetermine: dein Überblick für die kommenden 14 Tage.',
-    'Nouveaux épisodes, prochaines saisons et dates annoncées : votre aperçu des 14 prochains jours.',
-    'Nuovi episodi, prossime stagioni e date annunciate: la guida ai prossimi 14 giorni.',
-    'Nuevos episodios, próximas temporadas y fechas anunciadas: tu guía de los próximos 14 días.',
-    'New episodes, upcoming seasons and announced air dates: your guide to the next 14 days.',
+    'Angekündigte Serienfolgen und ihre Sendetermine: dein Ausblick auf die kommenden 14 Tage.',
+    'Épisodes annoncés et dates de diffusion : votre aperçu des 14 prochains jours.',
+    'Episodi annunciati e date di uscita: la panoramica dei prossimi 14 giorni.',
+    'Episodios anunciados y fechas de emisión: tu guía de los próximos 14 días.',
+    'Announced series episodes and their air dates: your look ahead at the next 14 days.',
   ),
   guide: l(
     'Folgen & Termine',
@@ -58,11 +58,11 @@ export const episodeCopy = {
     'Original broadcast',
   ),
   global: l(
-    'Internationaler Streamingstart',
-    'Première en streaming internationale',
-    'Prima streaming internazionale',
-    'Estreno internacional en streaming',
-    'International streaming premiere',
+    'Internationaler Sendetermin',
+    'Diffusion internationale',
+    'Uscita internazionale',
+    'Emisión internacional',
+    'International air date',
   ),
   scope: l(
     'Die Termine beziehen sich auf die Originalausstrahlung. Streamingangebote auf der Serienseite zeigen die Verfügbarkeit der Serie; einzelne Folgen können abweichen.',
@@ -84,13 +84,6 @@ export const episodeCopy = {
     'Dati normalizzati; descrizioni in testo semplice.',
     'Datos normalizados; descripciones en texto plano.',
     'Data normalized; summaries converted to plain text.',
-  ),
-  more: l(
-    'Vollständiger Episodenführer bei TVmaze',
-    'Guide complet sur TVmaze',
-    'Guida completa su TVmaze',
-    'Guía completa en TVmaze',
-    'Full episode guide on TVmaze',
   ),
   specials: l(
     'Specials',
@@ -114,13 +107,6 @@ export const episodeCopy = {
     'More ratings',
   ),
   awards: l('Auszeichnungen', 'Récompenses', 'Premi', 'Premios', 'Awards'),
-  complete: l(
-    'Alle Termine entdecken',
-    'Voir toutes les dates',
-    'Scopri tutte le date',
-    'Ver todas las fechas',
-    'Explore all air dates',
-  ),
 };
 
 export const calendarZones: Record<string, string> = {

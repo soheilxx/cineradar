@@ -22,6 +22,17 @@ import { jsonLd } from '@/seo/metadata';
 import { ComparisonHeader, ComparisonSearch } from './comparison-search';
 import { Footer } from './footer';
 
+function isApiProviderSource(source: string) {
+  const host = new URL(source).hostname;
+  return [
+    'tvmaze.com',
+    'omdbapi.com',
+    'themoviedb.org',
+    'tmdb.org',
+    'movieofthenight.com',
+  ].some((domain) => host === domain || host.endsWith(`.${domain}`));
+}
+
 export async function ComparisonPage({
   locale,
   id,
@@ -171,14 +182,21 @@ export async function ComparisonPage({
                         <td>
                           <p>{claim.text[locale]}</p>
                           <small>{claim.scope[locale]}</small>
-                          <AppLink
-                            className="claim-source"
-                            href={claim.source}
-                            rel="noopener"
-                          >
-                            {copy.status[claim.status][locale]} ·{' '}
-                            {copy.source[locale]} <ArrowUpRight size={12} />
-                          </AppLink>
+                          {isApiProviderSource(claim.source) ? (
+                            <span className="claim-source">
+                              {copy.status[claim.status][locale]} ·{' '}
+                              {copy.source[locale]}
+                            </span>
+                          ) : (
+                            <AppLink
+                              className="claim-source"
+                              href={claim.source}
+                              rel="noopener"
+                            >
+                              {copy.status[claim.status][locale]} ·{' '}
+                              {copy.source[locale]} <ArrowUpRight size={12} />
+                            </AppLink>
+                          )}
                         </td>
                         <td>
                           <p>{features[claim.feature].value[locale]}</p>
@@ -276,10 +294,17 @@ export async function ComparisonPage({
                 {Array.from(new Set(item.claims.map((x) => x.source))).map(
                   (source, i) => (
                     <li key={source}>
-                      <AppLink href={source} rel="noopener">
-                        {item.brand} · {copy.source[locale]} {i + 1}{' '}
-                        <ArrowUpRight size={14} />
-                      </AppLink>
+                      {isApiProviderSource(source) ? (
+                        <span>
+                          {item.brand} · {copy.source[locale]} {i + 1}
+                          <small className="source-uri"> · {source}</small>
+                        </span>
+                      ) : (
+                        <AppLink href={source} rel="noopener">
+                          {item.brand} · {copy.source[locale]} {i + 1}{' '}
+                          <ArrowUpRight size={14} />
+                        </AppLink>
+                      )}
                       <time dateTime={date}>{date}</time>
                     </li>
                   ),

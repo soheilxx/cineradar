@@ -9,6 +9,7 @@ import { getComparison } from '@/content/comparisons';
 import { copy } from '@/content/comparisons/copy';
 import { infoDescriptions } from '@/content/info';
 import { identifyEditorial } from '@/content/identify-editorial';
+import { calendarCopy } from '@/content/calendar';
 import type { MessageKey } from '@/i18n/messages';
 import { ogTitleFontSize } from '@/seo/og';
 export async function GET(req: Request) {
@@ -48,11 +49,13 @@ export async function GET(req: Request) {
     'notFound',
   ];
   let pageTitle =
-    page === 'identify'
-      ? identifyEditorial[locale].headline
-      : info || genericPages.includes(page)
-        ? t(locale, page as MessageKey)
-        : t(locale, 'headline');
+    page === 'calendar'
+      ? calendarCopy.title[locale]
+      : page === 'identify'
+        ? identifyEditorial[locale].headline
+        : info || genericPages.includes(page)
+          ? t(locale, page as MessageKey)
+          : t(locale, 'headline');
   if (page === 'providers' && tail) {
     const provider = (await providers(market)).find((p) => p.id === tail);
     if (!provider) return new Response(null, { status: 404 });
@@ -91,12 +94,14 @@ export async function GET(req: Request) {
     ? guide.focus[locale]
     : comparison === 'hub'
       ? copy.compare[locale]
-      : page === 'identify'
-        ? identifyEditorial[locale].nav
-        : info
-          ? 'Cineradar · Wiresoft AG'
-          : countryName(locale, market) +
-            (item?.title.year ? ' · ' + item.title.year : '');
+      : page === 'calendar'
+        ? calendarCopy.schedule[locale]
+        : page === 'identify'
+          ? identifyEditorial[locale].nav
+          : info
+            ? 'Cineradar · Wiresoft AG'
+            : countryName(locale, market) +
+              (item?.title.year ? ' · ' + item.title.year : '');
   let artwork: string | undefined;
   const imageSource =
     item?.title.backdrop ||
@@ -188,7 +193,11 @@ export async function GET(req: Request) {
         }}
       >
         <span>{subtitle}</span>
-        <span>{info || comparison ? 'cineradar.tv' : t(locale, 'offers')}</span>
+        <span>
+          {info || comparison || page === 'calendar'
+            ? 'cineradar.tv'
+            : t(locale, 'offers')}
+        </span>
       </div>
     </div>,
     {

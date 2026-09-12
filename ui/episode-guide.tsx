@@ -22,8 +22,9 @@ export function EpisodeSource({
 }) {
   return (
     <p className="episode-source">
-      {c.source[locale]}: <AppLink href={url}>TVmaze</AppLink> ·{' '}
+      {c.source[locale]}: TVmaze ·{' '}
       <AppLink href={TVMAZE_SOURCE.licenseUrl}>{TVMAZE_SOURCE.license}</AppLink>
+      <span className="source-uri">{url}</span>
       <span>{c.adapted[locale]}</span>
     </p>
   );
@@ -125,11 +126,6 @@ export async function TitleEpisodeGuide({
           </details>
         ))}
       </div>
-      {guide.truncated && (
-        <AppLink className="text-link" href={guide.show.url}>
-          {c.more[locale]} <ArrowUpRight size={16} />
-        </AppLink>
-      )}
       <EpisodeSource locale={locale} url={guide.show.url} />
     </section>
   );
@@ -168,7 +164,7 @@ export async function TitleEnrichment({
         </>
       )}
       <p className="episode-source">
-        <AppLink href={data.sourceUrl}>OMDb</AppLink> ·{' '}
+        OMDb ·{' '}
         <time dateTime={data.fetchedAt}>
           {new Intl.DateTimeFormat(locale, {
             dateStyle: 'medium',

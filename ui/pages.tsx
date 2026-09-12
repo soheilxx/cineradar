@@ -1003,32 +1003,21 @@ export function InfoPage({
             )}
           {route === 'credits' && (
             <>
-              <AppLink href="https://www.themoviedb.org/">
-                <img
-                  className="tmdb-logo"
-                  src="https://www.themoviedb.org/assets/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg"
-                  width="150"
-                  height="50"
-                  alt="TMDb"
-                />
-              </AppLink>
+              <img
+                className="tmdb-logo"
+                src="https://www.themoviedb.org/assets/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg"
+                width="150"
+                height="50"
+                alt="TMDb"
+              />
               <p lang="en">
                 This product uses the TMDB API but is not endorsed or certified
                 by TMDB.
               </p>
-              <AppLink
-                className="text-link"
-                href="https://docs.movieofthenight.com/"
-              >
-                Streaming Availability API by Movie of the Night{' '}
-                <ArrowUpRight size={18} />
-              </AppLink>
+              <p>Streaming Availability API by Movie of the Night</p>
               {c.tvmazeEnabled && <EpisodeSource locale={locale} />}
               {c.omdbEnabled && (
-                <p>
-                  <AppLink href="https://www.omdbapi.com/">OMDb API</AppLink> ·
-                  IMDb · Rotten Tomatoes · Metacritic
-                </p>
+                <p>OMDb API · IMDb · Rotten Tomatoes · Metacritic</p>
               )}
             </>
           )}

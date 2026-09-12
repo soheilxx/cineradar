@@ -79,79 +79,6 @@
 .episode-runtime {
   white-space: nowrap;
 }
-.calendar-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 24px;
-  padding: 0 0 26px;
-  border-bottom: 1px solid #ffffff14;
-  color: var(--muted-foreground);
-  font-size: 0.875rem;
-}
-.calendar-toolbar > a {
-  margin-left: auto;
-}
-.calendar-day {
-  display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
-  gap: 30px;
-  padding: 32px 0;
-  border-bottom: 1px solid #ffffff14;
-}
-.calendar-day > h2 {
-  font-size: 1.15rem;
-  line-height: 1.6;
-  margin: 0;
-  color: var(--primary);
-}
-.calendar-episodes {
-  display: grid;
-  gap: 12px;
-}
-.calendar-episode {
-  display: grid;
-  grid-template-columns: 100px minmax(0, 1fr);
-  gap: 20px;
-  padding: 20px;
-  border: 1px solid #ffffff12;
-  background: #11131b;
-  border-radius: 12px;
-}
-.calendar-time {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  font-variant-numeric: tabular-nums;
-}
-.calendar-time > time {
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-.calendar-time > span,
-.calendar-origin {
-  font-size: 0.78rem;
-  color: var(--muted-foreground);
-}
-.calendar-episode h3 {
-  font-size: 1.1rem;
-  margin: 0 0 8px;
-}
-.calendar-episode h3 a:hover {
-  color: var(--primary);
-}
-.calendar-episode p {
-  margin: 7px 0;
-  font-size: 0.9rem;
-}
-.calendar-episode .calendar-origin {
-  font-size: 0.78rem;
-}
-.calendar-editorial {
-  max-width: 80ch;
-  margin: 40px 0;
-  line-height: 1.8;
-}
 .source-ratings {
   display: flex;
   flex-wrap: wrap;
@@ -190,28 +117,6 @@
   }
   .episode-next > a {
     margin-left: 38px;
-  }
-  .calendar-day {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
-    padding: 24px 0;
-  }
-  .calendar-day > h2 {
-    font-size: 1.05rem;
-  }
-  .calendar-episode {
-    grid-template-columns: 64px minmax(0, 1fr);
-    gap: 14px;
-    padding: 16px;
-  }
-  .calendar-time > time {
-    font-size: 1.05rem;
-  }
-  .calendar-toolbar {
-    gap: 10px 16px;
-  }
-  .calendar-toolbar > a {
-    margin-left: 0;
   }
   .episode-list {
     padding: 0 14px;

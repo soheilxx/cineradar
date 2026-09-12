@@ -14,6 +14,7 @@ import './identify.css';
 import './voice-input.css';
 import './home-discovery.css';
 import './episodes.css';
+import './calendar.css';
 export async function generateMetadata(): Promise<Metadata> {
   const raw = (await headers()).get('x-cineradar-locale') || 'en';
   return {
