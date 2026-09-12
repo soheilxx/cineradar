@@ -1,6 +1,6 @@
 'use client';
 import { AppLink } from './app-link';
-import { useState } from 'react';
+import { useOptimistic, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bookmark, Menu, X, Globe2, Search, ArrowUpRight } from 'lucide-react';
 import { Brand } from './brand';
@@ -40,6 +40,20 @@ export function Header({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [context, setContext] = useOptimistic({ locale, market });
+  const destination = (url: string) =>
+    url + (route === 'identify' ? '' : window.location.search);
+  function languageDestination(value: string) {
+    const nextMarket = value === 'en' && markets.includes('us') ? 'us' : market;
+    return {
+      market: nextMarket,
+      url: languageLinks[value].replace(
+        /^\/[a-z]{2}\/[a-z]{2}\//,
+        `/${value}/${nextMarket}/`,
+      ),
+    };
+  }
   function navigate(
     url: string,
     l: string,
@@ -53,8 +67,6 @@ export function Header({
         JSON.stringify({ locale: l, market: m }),
       );
     } catch {}
-    const destination =
-      url + (route === 'identify' ? '' : window.location.search);
     trackEvent('context_change', {
       filter_name: field,
       filter_value: field === 'language' ? l : m,
@@ -64,7 +76,10 @@ export function Header({
       setOpen(false);
       trackEvent('mobile_menu_close', { trigger: 'navigation' });
     }
-    router.push(destination);
+    startTransition(() => {
+      setContext({ locale: l as Locale, market: m });
+      router.push(destination(url));
+    });
   }
   const menuLabel = {
     de: 'Menü',
@@ -77,7 +92,8 @@ export function Header({
     <>
       <Choice
         label={t(locale, 'market')}
-        value={market}
+        value={context.market}
+        disabled={pending}
         options={markets.map((value) => ({
           value,
           label: countryName(locale, value),
@@ -85,26 +101,26 @@ export function Header({
         onChange={(v) => {
           navigate(countryLinks[v] || path(locale, v), locale, v, 'market');
         }}
+        onOptionIntent={(v) => {
+          if (v !== market)
+            router.prefetch(destination(countryLinks[v] || path(locale, v)));
+        }}
       />
       <Choice
         label={t(locale, 'language')}
-        value={locale}
+        value={context.locale}
+        disabled={pending}
         options={locales.map((value) => ({
           value,
           label: languageNames[value],
         }))}
         onChange={(v) => {
-          const nextMarket =
-            v === 'en' && markets.includes('us') ? 'us' : market;
-          navigate(
-            languageLinks[v].replace(
-              /^\/[a-z]{2}\/[a-z]{2}\//,
-              `/${v}/${nextMarket}/`,
-            ),
-            v,
-            nextMarket,
-            'language',
-          );
+          const next = languageDestination(v);
+          navigate(next.url, v, next.market, 'language');
+        }}
+        onOptionIntent={(v) => {
+          if (v !== locale)
+            router.prefetch(destination(languageDestination(v).url));
         }}
       />
     </>
@@ -125,7 +141,7 @@ export function Header({
       <AppLink className="skip" href="#main" tabIndex={0}>
         {t(locale, 'skip')}
       </AppLink>
-      <header className="site-header">
+      <header className="site-header" aria-busy={pending}>
         <div className="container header-main">
           <Brand href={path(locale, market)} />
           <nav className="desktop-nav">{nav}</nav>

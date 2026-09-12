@@ -31,6 +31,12 @@ const envSchema = z.object({
     .default('gpt-4o-mini-transcribe'),
   IDENTIFY_AI_ENABLED: z.enum(['true', 'false']).default('false'),
   MEDIA_ENABLED: z.enum(['true', 'false']).default('false'),
+  TVMAZE_ENABLED: z.enum(['true', 'false']).default('false'),
+  TVMAZE_DAILY_BUDGET: z.coerce.number().int().min(0).max(20000).default(2000),
+  OMDB_ENABLED: z.enum(['true', 'false']).default('false'),
+  OMDB_API_KEY: z.string().optional(),
+  OMDB_COMMERCIAL_USE_CONFIRMED: z.enum(['true', 'false']).default('false'),
+  OMDB_DAILY_BUDGET: z.coerce.number().int().min(0).max(100000).default(900),
   BLOB_STORE_ID: z.string().optional(),
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
   MEDIA_DOWNLOADS_PER_MINUTE: z.coerce
@@ -134,6 +140,12 @@ export function config(
     throw new Error('Missing configuration: ' + missing.join(', '));
   return {
     ...c,
+    tvmazeEnabled: c.TVMAZE_ENABLED === 'true' && c.APP_MODE === 'live',
+    omdbEnabled:
+      c.OMDB_ENABLED === 'true' &&
+      c.APP_MODE === 'live' &&
+      c.OMDB_COMMERCIAL_USE_CONFIRMED === 'true' &&
+      Boolean(c.OMDB_API_KEY),
     mediaEnabled: c.MEDIA_ENABLED === 'true' && c.APP_MODE === 'live',
     identifyAiEnabled:
       c.IDENTIFY_AI_ENABLED === 'true' && Boolean(c.OPENAI_API_KEY),

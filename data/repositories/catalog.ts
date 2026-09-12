@@ -63,19 +63,48 @@ function mapRow(row: CatalogRow, market: string): CatalogItem {
     },
   };
 }
+type CatalogResult = {
+  items: CatalogItem[];
+  total: number;
+  unavailable: boolean;
+};
+async function catalogData(
+  locale: Locale,
+  market: string,
+  filters: Filters,
+  limit: number,
+  countTotal = true,
+): Promise<CatalogResult> {
+  if (config().APP_MODE !== 'live' || filters.mine?.length || filters.q?.trim())
+    return loadCatalog(locale, market, filters, limit, undefined, countTotal);
+  try {
+    return await publicCache(
+      'catalog:' + JSON.stringify([locale, market, filters, limit, countTotal]),
+      async () => {
+        const result = await loadCatalog(
+          locale,
+          market,
+          filters,
+          limit,
+          undefined,
+          countTotal,
+        );
+        // A transient outage must not replace a usable public cache entry.
+        if (result.unavailable) throw new Error('Catalog unavailable');
+        return result;
+      },
+    );
+  } catch {
+    return { items: [], total: 0, unavailable: true };
+  }
+}
 export async function catalog(
   locale: Locale,
   market: string,
   f: Filters = {},
   limit = 24,
-): Promise<{ items: CatalogItem[]; total: number; unavailable: boolean }> {
-  const result = await (config().APP_MODE !== 'live' ||
-  f.mine?.length ||
-  f.q?.trim()
-    ? loadCatalog(locale, market, f, limit)
-    : publicCache('catalog:' + JSON.stringify([locale, market, f, limit]), () =>
-        loadCatalog(locale, market, f, limit),
-      ));
+): Promise<CatalogResult> {
+  const result = await catalogData(locale, market, f, limit);
   // Resolve after the public cache so withdrawal is not delayed by cached cards.
   const titles = await withTitleArtwork(result.items.map((item) => item.title));
   return {
@@ -86,13 +115,46 @@ export async function catalog(
     })),
   };
 }
+// Keep independent shelf loads parallel, then check artwork once for all cards.
+export async function catalogShelves(
+  locale: Locale,
+  market: string,
+  filters: Filters[],
+  limit = 12,
+): Promise<{ items: CatalogItem[]; unavailable: boolean }[]> {
+  const results = await Promise.all(
+    filters.map((filter) => {
+      // EXPLAIN on production data shows that removing WindowAgg from selective
+      // provider/free shelves sorts the entire catalogue before checking offers.
+      // Omit it only for the broad release/new shelves whose plans benefit.
+      const releaseShelf =
+        filter.sort === 'latest' &&
+        !filter.provider &&
+        !filter.offerType &&
+        (filter.scope === 'finder' || filter.scope === 'new');
+      return catalogData(locale, market, filter, limit, !releaseShelf);
+    }),
+  );
+  const titles = await withTitleArtwork(
+    results.flatMap((result) => result.items.map((item) => item.title)),
+  );
+  let titleIndex = 0;
+  return results.map((result) => ({
+    unavailable: result.unavailable,
+    items: result.items.map((item) => ({
+      ...item,
+      title: titles[titleIndex++],
+    })),
+  }));
+}
 export async function loadCatalog(
   locale: Locale,
   market: string,
   f: Filters = {},
   limit = 24,
   database?: Database,
-): Promise<{ items: CatalogItem[]; total: number; unavailable: boolean }> {
+  countTotal = true,
+): Promise<CatalogResult> {
   const c = config();
   if (c.APP_MODE === 'fixture') {
     const rows = filterCatalog(
@@ -102,7 +164,7 @@ export async function loadCatalog(
     );
     return {
       items: rows.slice(((f.page || 1) - 1) * limit, (f.page || 1) * limit),
-      total: rows.length,
+      total: countTotal ? rows.length : 0,
       unavailable: false,
     };
   }
@@ -158,12 +220,17 @@ export async function loadCatalog(
       );
     let discoveryIds: string[] = [];
     if (q || f.sort === 'latest' || f.sort === 'trending') {
-      const ranking = await connection.query<{ data: { ids: string[] } }>(
-        "SELECT data FROM operations WHERE key LIKE $1 AND updated_at>now()-interval '7 days' ORDER BY (data->>'page')::int,key",
-        [
-          `ranking:${market}:${f.type || '%'}:${f.sort === 'latest' ? 'release_date' : 'popularity_1week'}:%`,
-        ],
-      );
+      const rankingKey = `ranking:${market}:${f.type || '%'}:${f.sort === 'latest' ? 'release_date' : 'popularity_1week'}:%`;
+      const loadRanking = () =>
+        connection.query<{ data: { ids: string[] } }>(
+          "SELECT data FROM operations WHERE key LIKE $1 AND updated_at>now()-interval '7 days' ORDER BY (data->>'page')::int,key",
+          [rankingKey],
+        );
+      // Different home shelves and languages reuse the same public rankings.
+      // An explicitly supplied database stays isolated for transactions/tests.
+      const ranking = database
+        ? await loadRanking()
+        : await publicCache(rankingKey, loadRanking);
       discoveryIds = [
         ...new Set(ranking.rows.flatMap((row) => row.data.ids || [])),
       ];
@@ -193,7 +260,7 @@ export async function loadCatalog(
                 ? sql`${matchRank} DESC,${prominence} DESC,${votes} DESC,t.id ASC`
                 : sql`CASE WHEN EXISTS(SELECT 1 FROM offers available WHERE available.title_id=t.id AND available.market=${market} AND (available.expires_at IS NULL OR available.expires_at>=now())) THEN 0 ELSE 1 END,COALESCE((t.data->>'rating')::numeric,0)*COALESCE((t.data->>'votes')::numeric,0)/(COALESCE((t.data->>'votes')::numeric,0)+500) DESC,t.id ASC`;
     const query =
-      sql`SELECT t.data,s.availability,s.checked_at,s.attempt_at,s.error_code,s.revision,COALESCE((SELECT jsonb_agg(o.data) FROM offers o WHERE o.title_id=t.id AND o.market=${market} AND(o.expires_at IS NULL OR o.expires_at>=now())),'[]'::jsonb) AS offers,count(*) OVER() AS total FROM titles t JOIN localizations l ON l.title_id=t.id AND l.locale=${locale} LEFT JOIN snapshots s ON s.title_id=t.id AND s.market=${market} WHERE ${sql.join(conditions, sql` AND `)} ORDER BY ${order} LIMIT ${limit} OFFSET ${((f.page || 1) - 1) * limit}`.compile(
+      sql`SELECT t.data,s.availability,s.checked_at,s.attempt_at,s.error_code,s.revision,COALESCE((SELECT jsonb_agg(o.data) FROM offers o WHERE o.title_id=t.id AND o.market=${market} AND(o.expires_at IS NULL OR o.expires_at>=now())),'[]'::jsonb) AS offers,${countTotal ? sql`count(*) OVER()` : sql`0::integer`} AS total FROM titles t JOIN localizations l ON l.title_id=t.id AND l.locale=${locale} LEFT JOIN snapshots s ON s.title_id=t.id AND s.market=${market} WHERE ${sql.join(conditions, sql` AND `)} ORDER BY ${order} LIMIT ${limit} OFFSET ${((f.page || 1) - 1) * limit}`.compile(
         compiler,
       );
     const { rows } = await connection.query<CatalogRow>(query.sql, [
@@ -242,12 +309,16 @@ export async function providerStatus(
     };
   if (!config().DATABASE_URL) return { items: [], unavailable: true };
   try {
-    const rows = (
-      await (database || (await db())).query<{ data: Provider }>(
-        "SELECT data FROM providers WHERE market=$1 ORDER BY data->>'name'",
-        [market],
-      )
-    ).rows.map((x) => x.data);
+    const load = async () =>
+      (
+        await (database || (await db())).query<{ data: Provider }>(
+          "SELECT data FROM providers WHERE market=$1 ORDER BY data->>'name'",
+          [market],
+        )
+      ).rows.map((x) => x.data);
+    const rows = database
+      ? await load()
+      : await publicCache(`providers:${market}`, load);
     return { items: rows, unavailable: false };
   } catch {
     return { items: [], unavailable: true };

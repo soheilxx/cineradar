@@ -36,6 +36,8 @@ export interface Title {
   id: string;
   type: MediaType;
   tmdbId: number;
+  externalIds?: { imdb?: string; tvdb?: number; tvmaze?: number };
+  externalIdsCheckedAt?: string;
   saaId?: string;
   originalTitle: string;
   year: number | null;

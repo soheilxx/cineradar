@@ -17,6 +17,13 @@ const homeTitle = l(
   'Find movies and series – streaming guide for {country}',
 );
 const descriptions = {
+  calendar: l(
+    'Wann kommt die nächste Folge? Entdecke angekündigte Serienfolgen, Staffeln und Original-Sendetermine der kommenden 14 Tage im Cineradar-Serienkalender.',
+    'Quand sort le prochain épisode ? Retrouvez les épisodes, saisons et dates de diffusion originales annoncées pour les 14 prochains jours.',
+    'Quando esce il prossimo episodio? Scopri episodi, stagioni e date della prima trasmissione annunciati per i prossimi 14 giorni.',
+    '¿Cuándo sale el próximo episodio? Descubre episodios, temporadas y fechas de emisión original anunciados para los próximos 14 días.',
+    'When is the next episode? Explore announced series episodes, seasons and original air dates for the next 14 days in the Cineradar series calendar.',
+  ),
   home: l(
     'Finde Filme und Serien, vergleiche Streamingangebote in {country} und entdecke neue Titel. Der KI-Titelfinder hilft dir, vergessene Titel wiederzufinden.',
     'Trouvez des films et séries, comparez les offres de streaming en {country} et découvrez de nouveaux titres. Retrouvez aussi un titre oublié grâce à une description.',

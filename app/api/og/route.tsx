@@ -34,6 +34,7 @@ export async function GET(req: Request) {
   const genericPages = [
     'movies',
     'series',
+    'calendar',
     'providers',
     'new',
     'leaving',

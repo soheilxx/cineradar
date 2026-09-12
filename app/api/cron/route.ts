@@ -5,6 +5,9 @@ import { db } from '@/data/db';
 import { tick } from '@/jobs/worker';
 import { publishSitemaps } from '@/seo/sitemap-publish';
 import { runMediaBatch } from '@/jobs/media';
+import { runTvmazeBatch } from '@/jobs/tvmaze';
+import { runOmdbBatch } from '@/jobs/omdb';
+import { runProviderDiscovery } from '@/jobs/provider-discovery';
 export const maxDuration = 300;
 export async function POST(req: Request) {
   const key = config().CRON_SECRET;
@@ -30,12 +33,18 @@ export async function POST(req: Request) {
   await schedule();
   let completed = 0;
   let failed = 0;
-  let media: Awaited<ReturnType<typeof runMediaBatch>> | { error: true };
-  try {
-    media = await runMediaBatch();
-  } catch {
-    media = { error: true };
-  }
+  const extras = await Promise.allSettled([
+    runMediaBatch(),
+    runTvmazeBatch({ maxDurationMs: 35000, maxRequests: 25, maxPages: 4 }),
+    runOmdbBatch({ maxDurationMs: 30000, maxJobs: 20 }),
+    runProviderDiscovery({ maxDurationMs: 25000 }),
+  ]);
+  const media = extras[0].status === 'fulfilled' ? extras[0].value : { error: true };
+  const supplemental = extras.slice(1).map((result, index) => ({
+    source: ['tvmaze', 'omdb', 'discovery'][index],
+    result:
+      result.status === 'fulfilled' ? result.value : { error: 'worker_failed' },
+  }));
   if (config().SYNC_ENABLED === 'true') {
     const deadline = Date.now() + 45000;
     const results = await Promise.allSettled(
@@ -67,6 +76,7 @@ export async function POST(req: Request) {
       failed,
       sitemap,
       media,
+      supplemental,
     },
     failed || sitemap.state === 'failed' || 'error' in media ? 503 : 200,
   );

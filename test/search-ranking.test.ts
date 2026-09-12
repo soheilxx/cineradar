@@ -101,6 +101,10 @@ async function verify(
   const expected = filterCatalog(rows, locale, filters, now, ranking);
   assert.deepEqual(ids(actual.items), ids(expected));
   assert.equal(actual.total, expected.length);
+  const shelf = await loadCatalog(locale, 'de', filters, 5, adapter, false);
+  assert.equal(shelf.unavailable, false);
+  assert.deepEqual(ids(shelf.items), ids(expected).slice(0, 5));
+  assert.equal(shelf.total, 0);
   return actual.items;
 }
 

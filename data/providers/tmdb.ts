@@ -4,8 +4,31 @@ import { locales, type Locale } from '../../i18n/config';
 import { slugify } from '../../i18n/routes';
 import { config } from '../../lib/config';
 import { request, ProviderError, type Reserve } from './http';
+const externalIdsSchema = z.object({
+  imdb_id: z.string().nullable().optional(),
+  tvdb_id: z
+    .number()
+    .int()
+    .positive()
+    .max(Number.MAX_SAFE_INTEGER)
+    .nullable()
+    .optional(),
+});
+export function normalizeExternalIds(
+  raw: z.infer<typeof externalIdsSchema>,
+): NonNullable<Title['externalIds']> {
+  return {
+    ...(raw.imdb_id && /^tt\d{7,12}$/.test(raw.imdb_id)
+      ? { imdb: raw.imdb_id }
+      : {}),
+    ...(raw.tvdb_id && Number.isSafeInteger(raw.tvdb_id) && raw.tvdb_id > 0
+      ? { tvdb: raw.tvdb_id }
+      : {}),
+  };
+}
 const detail = z.object({
-  id: z.number().int().positive(),
+  id: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+  external_ids: externalIdsSchema.optional(),
   title: z.string().optional(),
   name: z.string().optional(),
   original_title: z.string().optional(),
@@ -106,7 +129,47 @@ export class TMDB {
       list,
     );
   }
+  async externalIds(type: MediaType, id: number) {
+    if (!['movie', 'tv'].includes(type) || !Number.isSafeInteger(id) || id <= 0)
+      throw new ProviderError('schema');
+    const result = await this.get(
+      `/${type}/${id}/external_ids`,
+      {},
+      externalIdsSchema.extend({
+        id: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+      }),
+    );
+    if (result.id !== id) throw new ProviderError('schema');
+    return normalizeExternalIds(result);
+  }
+  async findSeries(externalId: string, source: 'imdb_id' | 'tvdb_id') {
+    if (
+      !['imdb_id', 'tvdb_id'].includes(source) ||
+      !(source === 'imdb_id'
+        ? /^tt\d{7,12}$/.test(externalId)
+        : /^[1-9]\d{0,15}$/.test(externalId) &&
+          Number.isSafeInteger(Number(externalId)))
+    )
+      throw new ProviderError('schema');
+    const result = await this.get(
+      `/find/${externalId}`,
+      { external_source: source },
+      z.object({
+        tv_results: z
+          .array(
+            z.object({
+              id: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+            }),
+          )
+          .max(100),
+      }),
+    );
+    // A source identifier must resolve unambiguously before importing a title.
+    return result.tv_results.length === 1 ? result.tv_results[0].id : null;
+  }
   async title(type: MediaType, id: number, previous?: Title): Promise<Title> {
+    if (!['movie', 'tv'].includes(type) || !Number.isSafeInteger(id) || id <= 0)
+      throw new ProviderError('schema');
     this.images ??= this.get('/configuration', {}, configSchema);
     const images = (await this.images).images;
     if (new URL(images.secure_base_url).hostname !== 'image.tmdb.org')
@@ -116,7 +179,7 @@ export class TMDB {
     for (const locale of locales) {
       const d = await this.get(
         `/${type}/${id}`,
-        { language: locale, append_to_response: 'credits' },
+        { language: locale, append_to_response: 'credits,external_ids' },
         detail,
       );
       if (d.id !== id) throw new ProviderError('schema');
@@ -152,6 +215,20 @@ export class TMDB {
       id: type + ':' + id,
       type,
       tmdbId: id,
+      externalIds:
+        d.external_ids === undefined
+          ? { ...previous?.externalIds }
+          : {
+              ...(previous?.externalIds?.tvmaze
+                ? { tvmaze: previous.externalIds.tvmaze }
+                : {}),
+              ...normalizeExternalIds(d.external_ids),
+            },
+      ...(d.external_ids !== undefined
+        ? { externalIdsCheckedAt: new Date().toISOString() }
+        : previous?.externalIdsCheckedAt
+          ? { externalIdsCheckedAt: previous.externalIdsCheckedAt }
+          : {}),
       originalTitle:
         d.original_title || d.original_name || localizations.en.title,
       year:

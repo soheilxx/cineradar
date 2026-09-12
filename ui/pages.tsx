@@ -1,8 +1,16 @@
 import { AppLink } from './app-link';
+import { Suspense } from 'react';
+import {
+  TitleEpisodeGuide,
+  TitleEnrichment,
+  EpisodeSource,
+} from './episode-guide';
+import { episodeCopy } from '@/content/episodes';
 import { infoDescriptions, infoHeadings } from '@/content/info';
 import {
   ArrowRight,
   ArrowUpRight,
+  CalendarDays,
   Clock,
   Compass,
   Film,
@@ -444,6 +452,15 @@ export function ListingPage({
   return (
     <>
       <PageHeading {...{ locale, title, description }} />
+      {route === 'series' && config().tvmazeEnabled && (
+        <AppLink
+          className="series-calendar-link"
+          href={path(locale, market, 'calendar')}
+        >
+          <CalendarDays size={19} /> {t(locale, 'calendar')}{' '}
+          <ArrowRight size={17} />
+        </AppLink>
+      )}
       {route === 'search' && (
         <Search
           key={filters.q || ''}
@@ -615,6 +632,9 @@ export function DetailPage({
               <AppLink href="#seasons">{t(locale, 'seasons')}</AppLink>
             )}
             <AppLink href="#info">{t(locale, 'info')}</AppLink>
+            {d.type === 'tv' && config().tvmazeEnabled && (
+              <AppLink href="#episodes">{episodeCopy.guide[locale]}</AppLink>
+            )}
           </nav>
         </div>
       </section>
@@ -696,6 +716,14 @@ export function DetailPage({
           </div>
         </section>
       )}
+      {d.type === 'tv' && (
+        <Suspense fallback={null}>
+          <TitleEpisodeGuide titleId={d.id} locale={locale} market={market} />
+        </Suspense>
+      )}
+      <Suspense fallback={null}>
+        <TitleEnrichment titleId={d.id} locale={locale} />
+      </Suspense>
       <section id="info" className="section info-grid">
         <div>
           <h2>{t(locale, 'aboutTitle', { title: l.title })}</h2>
@@ -995,6 +1023,13 @@ export function InfoPage({
                 Streaming Availability API by Movie of the Night{' '}
                 <ArrowUpRight size={18} />
               </AppLink>
+              {c.tvmazeEnabled && <EpisodeSource locale={locale} />}
+              {c.omdbEnabled && (
+                <p>
+                  <AppLink href="https://www.omdbapi.com/">OMDb API</AppLink> ·
+                  IMDb · Rotten Tomatoes · Metacritic
+                </p>
+              )}
             </>
           )}
         </div>

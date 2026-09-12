@@ -9,6 +9,7 @@ import { path } from '../i18n/routes';
 import { comparisons } from '../content/comparisons';
 import { comparisonPath } from '../content/comparisons/routes';
 import { identifySitemapEntries } from './identify';
+import { calendarSitemapEntries } from './calendar';
 import {
   titleAlternates,
   titleEligibility,
@@ -313,7 +314,10 @@ export async function publishSitemaps(
       data: titles[index],
     }));
     const entries = assignSitemapRevisions(
-      buildSitemapEntries(projectedRows, origin, c.markets, now),
+      [
+        ...buildSitemapEntries(projectedRows, origin, c.markets, now),
+        ...(await calendarSitemapEntries(database, origin)),
+      ],
       previous.rows,
       now,
     );

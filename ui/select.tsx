@@ -12,12 +12,16 @@ export function Choice({
   value,
   options,
   onChange,
+  onOptionIntent,
+  disabled = false,
   name,
 }: {
   label: string;
   value: string;
   options: { value: string; label: string }[];
   onChange: (value: string) => void;
+  onOptionIntent?: (value: string) => void;
+  disabled?: boolean;
   name?: string;
 }) {
   const ready = useHydrated();
@@ -25,7 +29,7 @@ export function Choice({
     <label className="choice">
       <span>{label}</span>
       <Select
-        disabled={!ready}
+        disabled={!ready || disabled}
         name={name}
         value={value}
         onValueChange={(v) => {
@@ -38,7 +42,14 @@ export function Choice({
         </SelectTrigger>
         <SelectContent>
           {options.map((o) => (
-            <SelectItem key={o.value} value={o.value}>
+            <SelectItem
+              key={o.value}
+              value={o.value}
+              onPointerEnter={(event) => {
+                if (event.pointerType === 'mouse') onOptionIntent?.(o.value);
+              }}
+              onFocus={() => onOptionIntent?.(o.value)}
+            >
               {o.label}
             </SelectItem>
           ))}

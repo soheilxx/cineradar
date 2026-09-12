@@ -4,6 +4,13 @@ const paths = {
   search: ['suche', 'recherche', 'cerca', 'buscar', 'search'],
   movies: ['filme', 'films', 'film', 'peliculas', 'films'],
   series: ['serien', 'series', 'serie', 'series', 'shows'],
+  calendar: [
+    'serienkalender',
+    'calendrier-series',
+    'calendario-serie',
+    'calendario-series',
+    'series-calendar',
+  ],
   movie: ['film', 'film', 'film', 'pelicula', 'movie'],
   tv: ['serie', 'serie', 'serie', 'serie', 'show'],
   providers: [

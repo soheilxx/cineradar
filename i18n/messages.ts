@@ -8,6 +8,13 @@ export const messages = {
   home: ['Entdecken', 'Découvrir', 'Scopri', 'Descubrir', 'Discover'],
   movies: ['Filme', 'Films', 'Film', 'Películas', 'Movies'],
   series: ['Serien', 'Séries', 'Serie', 'Series', 'Series'],
+  calendar: [
+    'Serienkalender',
+    'Calendrier des séries',
+    'Calendario delle serie',
+    'Calendario de series',
+    'Series calendar',
+  ],
   movie: ['Film', 'Film', 'Film', 'Película', 'Movie'],
   tv: ['Serie', 'Série', 'Serie', 'Serie', 'TV series'],
   providers: [

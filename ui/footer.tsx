@@ -57,6 +57,11 @@ export function Footer({ locale, market }: { locale: Locale; market: string }) {
                 {t(locale, k)}
               </AppLink>
             ))}
+            {config().tvmazeEnabled && (
+              <AppLink href={path(locale, market, 'calendar')}>
+                {t(locale, 'calendar')}
+              </AppLink>
+            )}
           </nav>
           <nav aria-label={labels.service[locale]}>
             <h2>{labels.service[locale]}</h2>
@@ -98,6 +103,12 @@ export function Footer({ locale, market }: { locale: Locale; market: string }) {
             <AppLink href="https://docs.movieofthenight.com/">
               Streaming Availability API by Movie of the Night
             </AppLink>
+            {config().tvmazeEnabled && (
+              <AppLink href="https://www.tvmaze.com/api">TVmaze</AppLink>
+            )}
+            {config().omdbEnabled && (
+              <AppLink href="https://www.omdbapi.com/">OMDb</AppLink>
+            )}
           </div>
         </div>
       </div>
