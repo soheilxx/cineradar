@@ -82,6 +82,11 @@ test('Calendar titles stay on Cineradar and every day-navigation link resolves t
   for (const locale of locales) {
     const mapped = { ...row(1, 'Mapped source title'), title: mappedTitle };
     const html = render([mapped, row(2, 'Unmapped Series')], locale);
+    assert.doesNotMatch(
+      html,
+      /https?:\/\/(?:www\.)?(?:tvmaze\.com|omdbapi\.com|themoviedb\.org|movieofthenight\.com)/i,
+      locale,
+    );
     const cards = articles(html);
     assert.equal(cards.length, 2, locale);
     // Standalone Next Link rendering does not load next.config's trailingSlash.

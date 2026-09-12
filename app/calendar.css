@@ -385,9 +385,6 @@
   margin: 0 0 22px;
   max-width: 80ch;
 }
-.source-uri {
-  overflow-wrap: anywhere;
-}
 @media (max-width: 900px) {
   .calendar-hero {
     grid-template-columns: minmax(0, 1fr) 155px;

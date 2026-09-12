@@ -13,18 +13,11 @@ import { AppLink } from './app-link';
 import { episodeDate, exactEpisodeTime } from './episode-dates';
 
 const readGuide = cache(getEpisodeGuide);
-export function EpisodeSource({
-  locale,
-  url = TVMAZE_SOURCE.url,
-}: {
-  locale: Locale;
-  url?: string;
-}) {
+export function EpisodeSource({ locale }: { locale: Locale }) {
   return (
     <p className="episode-source">
       {c.source[locale]}: TVmaze ·{' '}
       <AppLink href={TVMAZE_SOURCE.licenseUrl}>{TVMAZE_SOURCE.license}</AppLink>
-      <span className="source-uri">{url}</span>
       <span>{c.adapted[locale]}</span>
     </p>
   );
@@ -126,7 +119,7 @@ export async function TitleEpisodeGuide({
           </details>
         ))}
       </div>
-      <EpisodeSource locale={locale} url={guide.show.url} />
+      <EpisodeSource locale={locale} />
     </section>
   );
 }

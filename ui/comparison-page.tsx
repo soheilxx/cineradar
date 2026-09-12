@@ -297,7 +297,6 @@ export async function ComparisonPage({
                       {isApiProviderSource(source) ? (
                         <span>
                           {item.brand} · {copy.source[locale]} {i + 1}
-                          <small className="source-uri"> · {source}</small>
                         </span>
                       ) : (
                         <AppLink href={source} rel="noopener">

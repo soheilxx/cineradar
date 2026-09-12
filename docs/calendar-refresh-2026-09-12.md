@@ -6,7 +6,7 @@ Redaktionelle Absätze und FAQs stehen unter dem Kalender. Titel, Beschreibungen
 
 ## Dauerhafte Vorgabe für Quellen
 
-Keine öffentlichen Backlinks zu API-Datenanbietern: TVmaze, OMDb, TMDB und Streaming Availability/Movie of the Night werden als Text genannt. Das gilt auch für dynamisch gerenderte Vergleichsquellen und Episodenführer. Herkunfts-URIs dürfen als nicht anklickbarer Text erhalten bleiben. Lizenzverweise und interne Cineradar-Navigation bleiben erhalten. API-Aufrufe, serverseitige URLs, gespeicherte Provenienz und echte Streamingangebotslinks werden dadurch nicht verändert.
+Keine öffentlichen Backlinks zu API-Datenanbietern: TVmaze, OMDb, TMDB und Streaming Availability/Movie of the Night werden als Text genannt. Das gilt auch für dynamisch gerenderte Vergleichsquellen und Episodenführer. Auch ausgeschriebene Anbieter-URLs erscheinen nicht in der öffentlichen Oberfläche. Herkunfts-URIs bleiben ausschließlich in den internen Daten erhalten. Lizenzverweise und interne Cineradar-Navigation bleiben erhalten. API-Aufrufe, serverseitige URLs, gespeicherte Provenienz und echte Streamingangebotslinks werden dadurch nicht verändert.
 
 ## Prüfung
 
