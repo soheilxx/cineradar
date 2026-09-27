@@ -10,6 +10,7 @@ import { comparisons } from '../content/comparisons';
 import { comparisonPath } from '../content/comparisons/routes';
 import { identifySitemapEntries } from './identify';
 import { calendarSitemapEntries } from './calendar';
+import { sitemapSourceRows } from './sitemap-source';
 import {
   titleAlternates,
   titleEligibility,
@@ -262,8 +263,21 @@ export function assignSitemapRevisions(
   return entries;
 }
 
+class SitemapExportDeadline extends Error {}
+
+function safeFailureCode(error: unknown) {
+  if (error instanceof SitemapExportDeadline) return 'time_budget';
+  if (error && typeof error === 'object' && 'code' in error) {
+    const code = String(error.code);
+    if (/^[0-9A-Z]{5}$/.test(code)) return 'sql_' + code;
+  }
+  if (error instanceof Error && error.name === 'TimeoutError') return 'timeout';
+  if (error instanceof Error && error.name === 'AbortError') return 'aborted';
+  return 'failed';
+}
+
 export async function publishSitemaps(
-  options: { force?: boolean } = {},
+  options: { force?: boolean; maxDurationMs?: number } = {},
   injected?: Database,
 ) {
   const c = config();
@@ -274,26 +288,35 @@ export async function publishSitemaps(
     c.LICENSES_CONFIRMED !== 'true'
   )
     return { state: 'disabled' };
-  const database = injected || (await db());
+  const connection = injected || (await db());
   const token = randomUUID();
-  const claimed = await database.query(
-    `UPDATE seo_sitemap_state SET lock_token=$1,locked_until=now()+interval '10 minutes',last_attempt=now() WHERE id=1 AND (locked_until IS NULL OR locked_until<now()) AND ($2::boolean OR last_success IS NULL OR last_success<now()-interval '15 minutes') RETURNING id`,
+  const claimed = await connection.query(
+    // Scheduled retries back off from attempts as well as successful exports.
+    // Explicit manual force still bypasses that interval, never an active lease.
+    `UPDATE seo_sitemap_state SET lock_token=$1,locked_until=now()+interval '10 minutes',last_attempt=now() WHERE id=1 AND (locked_until IS NULL OR locked_until<now()) AND ($2::boolean OR ((last_attempt IS NULL OR last_attempt<now()-interval '15 minutes') AND (last_success IS NULL OR last_success<now()-interval '15 minutes'))) RETURNING id`,
     [token, !!options.force],
   );
   if (!claimed.rows.length) return { state: 'current' };
   const generation = randomUUID();
   const now = new Date();
+  const budget = Math.min(120000, Math.max(1, options.maxDurationMs || 120000));
+  const deadline = Date.now() + budget;
+  const assertBudget = () => {
+    if (Date.now() >= deadline) throw new SitemapExportDeadline();
+  };
+  const database: Database = {
+    query: <T>(sql: string, params?: unknown[]) => {
+      assertBudget();
+      // In-flight statements also have the shared database driver's 30s cap.
+      return connection.query<T>(sql, params);
+    },
+  };
+  let stage = 'source';
   try {
-    // One statement gives all candidates a single PostgreSQL snapshot, including
-    // expiry-sensitive offer revisions. No provider API participates in export.
-    const source =
-      await database.query<SitemapTitleRow>(`WITH active AS MATERIALIZED (
-      SELECT title_id,market,md5(string_agg((data-'observedAt')::text,'|' ORDER BY id)) revision,array_agg(DISTINCT provider_id) providers
-      FROM offers WHERE expires_at IS NULL OR expires_at>=now() GROUP BY title_id,market
-    ), states AS (
-      SELECT s.title_id,jsonb_agg(jsonb_build_object('market',s.market,'availability',s.availability,'checkedAt',s.checked_at,'changedAt',s.changed_at,'hasOffers',a.title_id IS NOT NULL,'revision',COALESCE(a.revision,''),'providers',COALESCE(a.providers,ARRAY[]::text[])) ORDER BY s.market) snapshots
-      FROM snapshots s LEFT JOIN active a ON a.title_id=s.title_id AND a.market=s.market GROUP BY s.title_id
-    ) SELECT t.data,t.updated_at,COALESCE(s.snapshots,'[]'::jsonb) snapshots FROM titles t LEFT JOIN states s ON s.title_id=t.id ORDER BY t.id`);
+    // Bounded batches persist reusable fingerprints even if this export exhausts
+    // its budget. Only a completed, validated generation becomes public.
+    const source = await sitemapSourceRows(database, c.markets, now);
+    stage = 'registry';
     const previous = await database.query<RegistryRow>(
       `SELECT url,segment,ordinal,revision,lastmod,indexable,sitemap_eligible,exclusion_reason,md5(COALESCE((SELECT string_agg(key||'='||value,E'\\n' ORDER BY key COLLATE "C") FROM jsonb_each_text(alternates)),'')) alternate_hash FROM seo_url_registry`,
     );
@@ -305,14 +328,17 @@ export async function publishSitemaps(
       existingArtifacts.rows.map((a) => [a.name, a]),
     );
     const origin = new URL(c.SITE_URL).origin;
+    stage = 'artwork';
     const titles = await withTitleArtwork(
-      source.rows.map((row) => row.data),
+      source.map((row) => row.data),
       database,
     );
-    const projectedRows = source.rows.map((row, index) => ({
+    const projectedRows = source.map((row, index) => ({
       ...row,
       data: titles[index],
     }));
+    assertBudget();
+    stage = 'entries';
     const entries = assignSitemapRevisions(
       [
         ...buildSitemapEntries(projectedRows, origin, c.markets, now),
@@ -345,9 +371,11 @@ export async function publishSitemaps(
       urls: number;
       bytes: number;
     }[] = [];
+    stage = 'artifacts';
     for (const [group, values] of [...groups.entries()].sort(([a], [b]) =>
       a.localeCompare(b),
     )) {
+      assertBudget();
       const xml = urlset(
         values.sort((a, b) => a.ordinal! - b.ordinal!),
         origin,
@@ -399,6 +427,7 @@ export async function publishSitemaps(
     }
     // Keep unchanged TOAST documents in PostgreSQL. Only a URL list and the
     // publication marker travel over the connection during subsequent scans.
+    stage = 'registry_write';
     for (let index = 0; index < unchanged.length; index += 5000) {
       const batch = unchanged.slice(index, index + 5000);
       const stamped = await database.query<{ count: string }>(
@@ -424,6 +453,7 @@ export async function publishSitemaps(
       if (written.rows.length !== batch.length)
         throw new Error('Sitemap lease lost');
     }
+    stage = 'publish';
     const published = await database.query<{ generation: string }>(
       'SELECT publish_sitemap_generation($1,$2,$3,$4,$5) AS generation',
       [
@@ -443,10 +473,14 @@ export async function publishSitemaps(
       registryUnchanged: unchanged.length,
     };
   } catch (error) {
-    await database.query(
-      `UPDATE seo_sitemap_state SET lock_token=null,locked_until=null,last_error='sitemap_export_failed' WHERE lock_token=$1`,
-      [token],
-    );
+    // Persist only allowlisted diagnostics, never driver messages, query text,
+    // provider URLs or credentials. Cleanup must not replace the original error.
+    await connection
+      .query(
+        `UPDATE seo_sitemap_state SET lock_token=null,locked_until=null,last_error=$2 WHERE lock_token=$1`,
+        [token, `sitemap_export_failed:${stage}:${safeFailureCode(error)}`],
+      )
+      .catch(() => {});
     throw error;
   }
 }

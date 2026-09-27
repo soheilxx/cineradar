@@ -132,8 +132,8 @@ test('public catalog work is coalesced, private filters stay uncached, and artwo
     );
     assert.equal(
       count('count(*) OVER()'),
-      3,
-      'Selective provider shelves retain their efficient filtering plan',
+      0,
+      'Shelves skip totals and enrich only selected IDs',
     );
     assert.equal(first[0].items[0].title.poster, title.poster);
     withdrawn = true;

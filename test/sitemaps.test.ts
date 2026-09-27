@@ -263,7 +263,10 @@ test('export works with provider synchronization disabled, reuses immutable cont
       await readFile('db/migrations/007_sitemaps.sql', 'utf8'),
     );
     await database.exec(
-      'CREATE TABLE titles(id text PRIMARY KEY,data jsonb,updated_at timestamptz); CREATE TABLE snapshots(title_id text,market text,availability text,checked_at timestamptz,changed_at timestamptz); CREATE TABLE offers(id text,title_id text,market text,provider_id text,data jsonb,expires_at timestamptz);',
+      'CREATE TABLE titles(id text PRIMARY KEY,data jsonb,updated_at timestamptz); CREATE TABLE snapshots(title_id text,market text,availability text,checked_at timestamptz,changed_at timestamptz,PRIMARY KEY(title_id,market)); CREATE TABLE offers(id text,title_id text,market text,provider_id text,data jsonb,expires_at timestamptz);',
+    );
+    await database.exec(
+      await readFile('db/migrations/015_sitemap_offer_revisions.sql', 'utf8'),
     );
     const row = sample();
     await database.query('INSERT INTO titles VALUES($1,$2,$3)', [
@@ -342,6 +345,96 @@ test('export works with provider synchronization disabled, reuses immutable cont
       (await database.query('SELECT 1 FROM seo_sitemap_generations')).rows
         .length,
       1,
+    );
+    await database.query(
+      "UPDATE seo_sitemap_state SET last_success=now()-interval '20 minutes',last_attempt=now()-interval '20 minutes'",
+    );
+    const failure = Object.assign(
+      new Error(
+        'secret provider URL and query text must never enter last_error',
+      ),
+      { code: '57014' },
+    );
+    let failedSourceReads = 0;
+    const unavailable: Database = {
+      query: async <T>(sql: string, params?: unknown[]) => {
+        if (sql.startsWith('WITH batch AS MATERIALIZED')) {
+          failedSourceReads++;
+          throw failure;
+        }
+        return adapter.query<T>(sql, params);
+      },
+    };
+    await assert.rejects(
+      publishSitemaps({}, unavailable),
+      (error) => error === failure,
+    );
+    const failed = (
+      await database.query<{
+        current_generation: string;
+        last_error: string;
+        lock_token: string | null;
+      }>(
+        'SELECT current_generation,last_error,lock_token FROM seo_sitemap_state',
+      )
+    ).rows[0];
+    assert.equal(failed.current_generation, result.generation);
+    assert.equal(failed.last_error, 'sitemap_export_failed:source:sql_57014');
+    assert.equal(failed.lock_token, null);
+    for (let attempt = 0; attempt < 3; attempt++)
+      assert.equal((await publishSitemaps({}, unavailable)).state, 'current');
+    assert.equal(
+      failedSourceReads,
+      1,
+      'failed scheduled exports must not run every minute',
+    );
+    await database.query(
+      "UPDATE seo_sitemap_state SET last_attempt=now()-interval '16 minutes'",
+    );
+    await assert.rejects(
+      publishSitemaps({}, unavailable),
+      (error) => error === failure,
+    );
+    assert.equal(
+      failedSourceReads,
+      2,
+      'a scheduled retry becomes eligible after its backoff',
+    );
+    assert.equal(
+      (await publishSitemaps({ force: true }, adapter)).generation,
+      result.generation,
+      'manual force can retry immediately',
+    );
+    await assert.rejects(
+      publishSitemaps(
+        { force: true, maxDurationMs: 1 },
+        {
+          query: async <T>(sql: string, params?: unknown[]) => {
+            const response = await adapter.query<T>(sql, params);
+            if (sql.startsWith('WITH batch AS MATERIALIZED'))
+              await new Promise((resolve) => setTimeout(resolve, 5));
+            return response;
+          },
+        },
+      ),
+    );
+    const timedOut = (
+      await database.query<{ current_generation: string; last_error: string }>(
+        'SELECT current_generation,last_error FROM seo_sitemap_state',
+      )
+    ).rows[0];
+    assert.equal(timedOut.current_generation, result.generation);
+    assert.match(
+      timedOut.last_error,
+      /^sitemap_export_failed:[a-z_]+:time_budget$/,
+    );
+    assert.deepEqual(
+      (
+        await database.query<{ manifest: unknown }>(
+          'SELECT manifest FROM seo_sitemap_generations',
+        )
+      ).rows[0].manifest,
+      first,
     );
   } finally {
     process.env = previous;

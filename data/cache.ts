@@ -1,4 +1,5 @@
-// Bounded process cache for public catalogue data; no personal results enter it.
+import { sharedPublicCache } from './shared-cache';
+// Bounded process coalescing in front of the shared public Next Data Cache.
 type Entry<T> = {
   value?: T;
   expires: number;
@@ -31,7 +32,7 @@ export async function publicCache<T>(
     expires: entry?.expires || 0,
     staleUntil: entry?.staleUntil || 0,
   };
-  const promise = loader()
+  const promise = sharedPublicCache(key, loader)
     .then((value) => {
       entries.set(key, {
         value,

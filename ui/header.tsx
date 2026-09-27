@@ -16,6 +16,7 @@ import { t } from '@/i18n/messages';
 import { comparisonPath } from '@/content/comparisons/routes';
 import { copy } from '@/content/comparisons/copy';
 import { trackEvent } from '@/lib/analytics';
+import { NavigationPending } from './loading-feedback';
 import {
   Dialog,
   DialogContent,
@@ -142,6 +143,7 @@ export function Header({
         {t(locale, 'skip')}
       </AppLink>
       <header className="site-header" aria-busy={pending}>
+        {pending && <NavigationPending locale={locale} />}
         <div className="container header-main">
           <Brand href={path(locale, market)} />
           <nav className="desktop-nav">{nav}</nav>

@@ -2628,3 +2628,113 @@ body {
   font-size: 14px;
   text-align: center;
 }
+
+/* Public route loading feedback; no CSS imports in renderable UI modules. */
+.cr-load-progress {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 3px;
+  z-index: 1000;
+  overflow: hidden;
+  pointer-events: none;
+  background: rgb(244 202 108 / 18%);
+}
+
+.cr-load-progress > span {
+  display: block;
+  height: 100%;
+  width: 40%;
+  background: #f4ca6c;
+  animation: cr-load-navigation-progress 1.1s ease-in-out infinite;
+}
+
+.cr-load-linkPending {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 1000;
+  height: 3px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, #f4ca6c, transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  animation: cr-load-catalog-pulse 1.1s ease-in-out infinite;
+}
+
+.cr-load-pending {
+  display: grid;
+  gap: 20px;
+  margin-block: 24px;
+  overflow: hidden;
+}
+
+.cr-load-pending > span {
+  display: block;
+  border-radius: 14px;
+  background: linear-gradient(110deg, #15171e 25%, #20232c 45%, #15171e 65%);
+  background-size: 250% 100%;
+  animation: cr-load-catalog-pulse 1.6s ease-in-out infinite;
+}
+
+.cr-load-cards {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.cr-load-cards > span {
+  aspect-ratio: 2 / 3;
+}
+
+.cr-load-feature > span {
+  height: clamp(340px, 40vw, 570px);
+}
+
+.cr-load-providers {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.cr-load-providers > span {
+  height: 64px;
+}
+
+.cr-load-identify > span {
+  height: 260px;
+}
+
+@keyframes cr-load-navigation-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(350%);
+  }
+}
+
+@keyframes cr-load-catalog-pulse {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .cr-load-cards,
+  .cr-load-providers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cr-load-cards > span:nth-child(n + 3),
+  .cr-load-providers > span:nth-child(n + 3) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cr-load-pending > span,
+  .cr-load-progress > span,
+  .cr-load-linkPending {
+    animation: none;
+  }
+  .cr-load-progress > span {
+    width: 100%;
+  }
+}

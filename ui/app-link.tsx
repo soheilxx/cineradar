@@ -1,7 +1,14 @@
 'use client';
 
-import Link from 'next/link';
+import Link, { useLinkStatus } from 'next/link';
 import { useState, type ComponentProps } from 'react';
+
+function LinkPending() {
+  const { pending } = useLinkStatus();
+  return pending ? (
+    <span className="cr-load-linkPending" aria-hidden="true" />
+  ) : null;
+}
 
 // Internal navigation keeps the current document alive so click events can
 // finish sending. Only user intent enables prefetching, so large catalog grids
@@ -35,6 +42,7 @@ export function AppLink({
         }}
       >
         {children}
+        <LinkPending />
       </Link>
     );
   return (

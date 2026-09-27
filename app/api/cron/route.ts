@@ -8,11 +8,17 @@ import { runMediaBatch } from '@/jobs/media';
 import { runTvmazeBatch } from '@/jobs/tvmaze';
 import { runOmdbBatch } from '@/jobs/omdb';
 import { runProviderDiscovery } from '@/jobs/provider-discovery';
+import { withCronLease } from '@/jobs/cron-lease';
 export const maxDuration = 300;
 export async function POST(req: Request) {
   const key = config().CRON_SECRET;
   if (!key || !equal(req.headers.get('authorization') || '', 'Bearer ' + key))
     return json({}, 401);
+  if (!config().DATABASE_URL) return json({ error: 'database_unavailable' }, 503);
+  return (await withCronLease(await db(), runCron)) ||
+    json({ state: 'skipped', reason: 'already_running' });
+}
+async function runCron() {
   let sitemap:
     | Awaited<ReturnType<typeof publishSitemaps>>
     | { state: 'failed' };

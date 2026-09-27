@@ -4,7 +4,7 @@ import { countryName } from '@/i18n/config';
 import { path } from '@/i18n/routes';
 import { t } from '@/i18n/messages';
 import { identifyEditorial } from '@/content/identify-editorial';
-import { IdentifyExperience } from './identify-experience';
+import { IdentifyLoader } from './identify-loader';
 import { AppLink } from './app-link';
 
 export function TitleIdentify({
@@ -28,7 +28,7 @@ export function TitleIdentify({
         </div>
         <h1>{copy.headline}</h1>
       </header>
-      <IdentifyExperience
+      <IdentifyLoader
         key={`${locale}:${market}`}
         {...{ locale, market, aiEnabled }}
         examples={copy.examples}

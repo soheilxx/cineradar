@@ -6,7 +6,7 @@ import { homeSearchCopy } from '@/content/home-search';
 import { identifyCopy } from '@/content/identify';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Search } from './search';
-import { IdentifyExperience } from './identify-experience';
+import { IdentifyLoader } from './identify-loader';
 import { useHydrated } from './use-hydrated';
 
 export function HomeSearch({
@@ -79,7 +79,7 @@ export function HomeSearch({
         hidden={mode !== 'identify'}
       >
         {identifyOpened && (
-          <IdentifyExperience
+          <IdentifyLoader
             key={`${locale}:${market}`}
             locale={locale}
             market={market}

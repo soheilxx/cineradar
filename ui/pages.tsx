@@ -25,7 +25,6 @@ import { path, type RouteKey } from '@/i18n/routes';
 import { PosterGrid, titlePath } from './cards';
 import { Search } from './search';
 import { SearchMore } from './search-more';
-import { ProviderSelection } from './provider-selection';
 import { FilterControls } from './filters';
 import { SaveButton } from './save-button';
 import { OfferList } from './offer-list';
@@ -40,7 +39,6 @@ import {
 import { streamingContent } from '@/seo/content';
 import { LazyCatalog } from './lazy-catalog';
 import { catalogCard } from '@/domain/cards';
-import { HomeShelf } from './home-shelf';
 import { FeaturedSpotlight } from './featured-spotlight';
 import { imageVariant, imageSet } from '@/domain/artwork';
 import { fold } from '@/domain/search';
@@ -79,30 +77,19 @@ export function Empty({
     </div>
   );
 }
-export interface HomeCollections {
-  latestMovies: CatalogItem[];
-  latestSeries: CatalogItem[];
-  recent: CatalogItem[];
-  free: CatalogItem[];
-  providers: { id: string; name: string; items: CatalogItem[] }[];
-}
 export function HomePage({
   locale,
   market,
-  items,
   providers,
-  unavailable,
+  featured,
   collections,
 }: {
   locale: Locale;
   market: string;
-  items: CatalogItem[];
-  providers: Provider[];
-  unavailable: boolean;
-  collections: HomeCollections;
+  providers: React.ReactNode;
+  featured: React.ReactNode;
+  collections: React.ReactNode;
 }) {
-  const feature = items[0];
-  const second = items[6] || items[1];
   return (
     <>
       <script
@@ -138,7 +125,67 @@ export function HomePage({
           examples={identifyEditorial[locale].examples}
         />
       </section>
-      <ProviderSelection {...{ locale, market, providers }} />
+      {providers}
+      {featured}
+      <section className="discovery-band">
+        <div>
+          <Sparkles size={22} />
+          <h2>{t(locale, 'topics')}</h2>
+        </div>
+        <div className="genre-links">
+          {(['scifi', 'thriller', 'comedy', 'drama'] as const).map((g, i) => (
+            <AppLink key={g} href={path(locale, market, 'topics', g)}>
+              <span>0{i + 1}</span>
+              {t(locale, g)}
+              <ArrowUpRight size={20} />
+            </AppLink>
+          ))}
+        </div>
+      </section>
+      {collections}
+      <section className="section home-guide">
+        <p className="eyebrow gold">Cineradar</p>
+        <h2>
+          {t(locale, 'streamingGuide', {
+            country: countryName(locale, market),
+          })}
+        </h2>
+        <p>{t(locale, 'guideIntro')}</p>
+        <p>
+          {t(locale, 'guideCountry', { country: countryName(locale, market) })}
+        </p>
+        <nav className="context-links">
+          <AppLink className="button" href={path(locale, market, 'finder')}>
+            {t(locale, 'finder')}
+            <ArrowRight size={18} />
+          </AppLink>
+          <AppLink
+            className="text-link"
+            href={path(locale, market, 'myProviders')}
+          >
+            {t(locale, 'myProviders')}
+            <ArrowRight size={18} />
+          </AppLink>
+        </nav>
+      </section>
+    </>
+  );
+}
+export function HomeFeatured({
+  locale,
+  market,
+  items,
+  unavailable,
+}: {
+  locale: Locale;
+  market: string;
+  items: CatalogItem[];
+  unavailable: boolean;
+}) {
+  const feature = items[0];
+  const second = items[6] || items[1];
+  return (
+    <>
       {feature ? (
         <section className="feature-grid">
           <FeaturedSpotlight
@@ -237,118 +284,6 @@ export function HomePage({
         ) : (
           <Empty locale={locale} unavailable />
         )}
-      </section>
-      <section className="discovery-band">
-        <div>
-          <Sparkles size={22} />
-          <h2>{t(locale, 'topics')}</h2>
-        </div>
-        <div className="genre-links">
-          {(['scifi', 'thriller', 'comedy', 'drama'] as const).map((g, i) => (
-            <AppLink key={g} href={path(locale, market, 'topics', g)}>
-              <span>0{i + 1}</span>
-              {t(locale, g)}
-              <ArrowUpRight size={20} />
-            </AppLink>
-          ))}
-        </div>
-      </section>
-      <HomeShelf
-        locale={locale}
-        title={t(locale, 'latestMovies')}
-        intro={t(locale, 'latestMoviesIntro', {
-          country: countryName(locale, market),
-        })}
-        href={path(locale, market, 'movies')}
-      >
-        <PosterGrid
-          items={collections.latestMovies}
-          locale={locale}
-          market={market}
-        />
-      </HomeShelf>
-      <HomeShelf
-        locale={locale}
-        title={t(locale, 'latestSeries')}
-        intro={t(locale, 'latestSeriesIntro', {
-          country: countryName(locale, market),
-        })}
-        href={path(locale, market, 'series')}
-      >
-        <PosterGrid
-          items={collections.latestSeries}
-          locale={locale}
-          market={market}
-        />
-      </HomeShelf>
-      {!!collections.recent.length && (
-        <HomeShelf
-          locale={locale}
-          title={t(locale, 'new')}
-          intro={t(locale, 'newDefinition')}
-          href={path(locale, market, 'new')}
-        >
-          <PosterGrid
-            items={collections.recent}
-            locale={locale}
-            market={market}
-          />
-        </HomeShelf>
-      )}
-      {collections.providers
-        .filter((provider) => provider.items.length)
-        .map((provider) => (
-          <HomeShelf
-            key={provider.id}
-            locale={locale}
-            title={t(locale, 'providerPicks', { provider: provider.name })}
-            href={path(locale, market, 'providers', provider.id)}
-          >
-            <PosterGrid
-              items={provider.items}
-              locale={locale}
-              market={market}
-            />
-          </HomeShelf>
-        ))}
-      {!!collections.free.length && (
-        <HomeShelf
-          locale={locale}
-          title={t(locale, 'free')}
-          intro={t(locale, 'freeDefinition')}
-          href={path(locale, market, 'free')}
-        >
-          <PosterGrid
-            items={collections.free}
-            locale={locale}
-            market={market}
-          />
-        </HomeShelf>
-      )}
-      <section className="section home-guide">
-        <p className="eyebrow gold">Cineradar</p>
-        <h2>
-          {t(locale, 'streamingGuide', {
-            country: countryName(locale, market),
-          })}
-        </h2>
-        <p>{t(locale, 'guideIntro')}</p>
-        <p>
-          {t(locale, 'guideCountry', { country: countryName(locale, market) })}
-        </p>
-        <nav className="context-links">
-          <AppLink className="button" href={path(locale, market, 'finder')}>
-            {t(locale, 'finder')}
-            <ArrowRight size={18} />
-          </AppLink>
-          <AppLink
-            className="text-link"
-            href={path(locale, market, 'myProviders')}
-          >
-            {t(locale, 'myProviders')}
-            <ArrowRight size={18} />
-          </AppLink>
-        </nav>
       </section>
     </>
   );
@@ -532,12 +467,12 @@ export function DetailPage({
   item,
   locale,
   market,
-  similar = [],
+  similar,
 }: {
   item: CatalogItem;
   locale: Locale;
   market: string;
-  similar?: CatalogItem[];
+  similar?: React.ReactNode;
 }) {
   const d = item.title;
   const l = d.localizations[locale];
@@ -782,12 +717,7 @@ export function DetailPage({
           ))}
         </nav>
       </section>
-      {!!similar.length && (
-        <section className="section">
-          <h2>{t(locale, 'similarTitles')}</h2>
-          <PosterGrid items={similar} locale={locale} market={market} />
-        </section>
-      )}
+      {similar}
     </>
   );
 }
