@@ -152,3 +152,33 @@ Migration 017 wurde anschließend erfolgreich angewendet (1,0 Sekunden). Die ben
 Der reale Build konnte nach dem ersten Abschnitt mit 100 Titeln und 1.324 qualifizierten URLs korrekt fortgesetzt werden; der nachfolgende Abschnitt erreichte 32.245 URLs. Eine weitere Live-Messung während des Exports: französische Startseite HTTP 200, 661 ms bis zu den Headern und 1.199 ms für den vollständigen HTML-Body. Der vollständige initiale Neuaufbau wird weiterhin in begrenzten Abschnitten durchgeführt; der Besucherbetrieb wartet nicht auf dessen Abschluss.
 
 Abschließende Prüfung des gesamten Codes: **280 Tests bestanden**, Produktionsbuild, Typecheck, Lint und `git diff --check` erfolgreich. Darin enthalten sind Upgrade, Wiederaufnahme ohne Force, unveränderte öffentliche Generation während Teilständen, Abbruch nach Artefaktspeicherung, konkurrierende Lease-Übernahme, Slug-/Genreänderung und Titellöschung während eines Replays sowie begrenzte Bereinigung und Dateiaufbewahrung.
+
+## Nachmessung der vollständigen Korrektur
+
+Auch Commit `f881508` wurde auf `main` veröffentlicht. Vercel meldet Deployment `dpl_vf11v2di1VZGfEagQFajtzC8sHUd` als Ready; beide öffentlichen Domains zeigen auf diese Version. Die folgende Stichprobe wurde während des laufenden Sitemap-Neuaufbaus gegen `cineradar.tv` erhoben:
+
+| Öffentlicher Abruf | HTTP | Antwortheader | Vollständiger HTML-/JSON-Body |
+| --- | --- | --- | --- |
+| Startseite, erster Messabruf | 200 | 556 ms | 877 ms |
+| Startseite, Folgeabruf | 200 | 407 ms | 448 ms |
+| Filmübersicht | 200 | 730 ms | 755 ms |
+| Lucifer-Suche | 200 | 1.261 ms | 1.262 ms |
+| Nicht vorhandener Titel | 404 | 311 ms | 313 ms |
+
+Der erste Messabruf ist kein nachgewiesener Kaltstart. Die Stichprobe misst den HTML-/JSON-Transfer ohne sämtliche Bilder und ist keine Core-Web-Vitals-Erhebung. Lucifer steht weiterhin auf Rang eins. Im Codex-Browser wurden der sichtbare Ladezustand beim Sprachwechsel, Englisch mit USA, die unabhängige Länderauswahl und die Rückkehr zu Deutsch/Deutschland geprüft.
+
+Die Messwerte stützen die Empfehlung, zunächst bei Vercel und Neon in Frankfurt zu bleiben. Sie belegen keinen generellen Geschwindigkeitsvergleich zu AWS und ersetzen keine längerfristigen Messungen unter realer Besucherauslastung.
+
+## Erfolgreicher vollständiger Sitemap-Neuaufbau
+
+Der Produktionsjob hat die gespeicherte Verarbeitung übernommen und am **27.09.2026 um 20:36:27 UTC** die Generation `77f7aa09-1756-4a31-af40-89ca778260ac` veröffentlicht. `last_error` ist leer, `building_generation` wurde zurückgesetzt. Die zuvor seit 13.09. unveränderte öffentliche Generation ist damit abgelöst.
+
+- Durchlaufener Bestand: **43.096 Titel**.
+- Geprüfte Sprach-/Ländervarianten einschließlich weiterer Seitentypen: 1.078.000 Registereinträge.
+- Für die öffentliche Sitemap geeignete URLs: **495.797** in **1.185 XML-Dateien**. Die URL-Anzahl ist keine Anzahl unterschiedlicher Filme oder Serien.
+- Öffentliche Prüfung um 20:37 UTC: `/sitemap.xml` HTTP 200 in 547 ms, 1.185 gleich-originige Dateiverweise und aktuelles `Last-Modified` vom Veröffentlichungszeitpunkt.
+- Stichprobe deutsche Filme: HTTP 200, 656 URLs, 1.303 Bildangaben und 10.992 Sprachverweise.
+- Stichprobe englische Serien für USA: HTTP 200, 562 URLs, 1.119 Bildangaben und 12.703 Sprachverweise.
+- Stichprobe deutscher Kalender: HTTP 200, eine URL und fünf Sprachverweise.
+
+Die öffentliche Abrufprüfung ist eine Stichprobe; die vollständige Dateiliste und ihre Mengen wurden zusätzlich bei der atomaren Veröffentlichung geprüft. Google-Crawling oder Indexaufnahme lassen sich daraus nicht garantieren. Der initiale Neuaufbau lief ungefähr 32 Minuten über gespeicherte Teilabschnitte; die Website blieb dabei erreichbar. Folgeläufe können unveränderte XML-Dateien wiederverwenden.
