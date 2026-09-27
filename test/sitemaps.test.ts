@@ -268,6 +268,9 @@ test('export works with provider synchronization disabled, reuses immutable cont
     await database.exec(
       await readFile('db/migrations/015_sitemap_offer_revisions.sql', 'utf8'),
     );
+    await database.exec(
+      await readFile('db/migrations/017_resumable_sitemaps.sql', 'utf8'),
+    );
     const row = sample();
     await database.query('INSERT INTO titles VALUES($1,$2,$3)', [
       row.data.id,
@@ -286,7 +289,11 @@ test('export works with provider synchronization disabled, reuses immutable cont
     let artifactWrites = 0;
     const adapter: Database = {
       query: async <T>(sql: string, params?: unknown[]) => {
-        if (sql.includes('INSERT INTO seo_url_registry')) documentWrites++;
+        if (
+          sql.includes('INSERT INTO seo_url_registry') &&
+          params?.[3] !== '[]'
+        )
+          documentWrites++;
         if (sql.includes('INSERT INTO seo_sitemap_artifacts')) artifactWrites++;
         return { rows: (await database.query<T>(sql, params)).rows };
       },
@@ -330,6 +337,7 @@ test('export works with provider synchronization disabled, reuses immutable cont
     documentWrites = 0;
     artifactWrites = 0;
     const unchangedExport = await publishSitemaps({ force: true }, adapter);
+    assert.equal(unchangedExport.state, 'published');
     assert.equal(unchangedExport.generation, result.generation);
     assert.equal(unchangedExport.registryChanged, 0);
     assert.ok((unchangedExport.registryUnchanged || 0) > 0);
@@ -400,23 +408,28 @@ test('export works with provider synchronization disabled, reuses immutable cont
       2,
       'a scheduled retry becomes eligible after its backoff',
     );
+    const recovered = await publishSitemaps({ force: true }, adapter);
+    assert.equal(recovered.state, 'published');
     assert.equal(
-      (await publishSitemaps({ force: true }, adapter)).generation,
+      recovered.generation,
       result.generation,
       'manual force can retry immediately',
     );
-    await assert.rejects(
-      publishSitemaps(
-        { force: true, maxDurationMs: 1 },
-        {
-          query: async <T>(sql: string, params?: unknown[]) => {
-            const response = await adapter.query<T>(sql, params);
-            if (sql.startsWith('WITH batch AS MATERIALIZED'))
-              await new Promise((resolve) => setTimeout(resolve, 5));
-            return response;
+    assert.equal(
+      (
+        await publishSitemaps(
+          { force: true, maxDurationMs: 1 },
+          {
+            query: async <T>(sql: string, params?: unknown[]) => {
+              const response = await adapter.query<T>(sql, params);
+              if (sql.startsWith('WITH batch AS MATERIALIZED'))
+                await new Promise((resolve) => setTimeout(resolve, 5));
+              return response;
+            },
           },
-        },
-      ),
+        )
+      ).state,
+      'building',
     );
     const timedOut = (
       await database.query<{ current_generation: string; last_error: string }>(
@@ -424,10 +437,7 @@ test('export works with provider synchronization disabled, reuses immutable cont
       )
     ).rows[0];
     assert.equal(timedOut.current_generation, result.generation);
-    assert.match(
-      timedOut.last_error,
-      /^sitemap_export_failed:[a-z_]+:time_budget$/,
-    );
+    assert.equal(timedOut.last_error, null);
     assert.deepEqual(
       (
         await database.query<{ manifest: unknown }>(

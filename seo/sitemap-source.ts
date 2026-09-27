@@ -8,7 +8,7 @@ const TITLE_BATCH_SIZE = 100;
 // changes invalidate material edits; the active-ID digest detects expiry even
 // when no import ran. Each batch observes one consistent database snapshot.
 const sourceBatch = `WITH batch AS MATERIALIZED (
-  SELECT id,data,updated_at FROM titles WHERE id>$1 ORDER BY id LIMIT $2
+  SELECT id,data,updated_at FROM titles WHERE id>$1 AND ($5::text IS NULL OR id<=$5) ORDER BY id LIMIT $2
 ), active AS MATERIALIZED (
   SELECT s.*,a.active_revision,a.providers FROM batch b
   JOIN snapshots s ON s.title_id=b.id AND s.market=ANY($3::text[])
@@ -51,14 +51,29 @@ export async function sitemapSourceRows(
   const rows: SitemapTitleRow[] = [];
   let cursor = '';
   for (;;) {
-    const batch = await database.query<SitemapTitleRow & { source_id: string }>(
-      sourceBatch,
-      [cursor, TITLE_BATCH_SIZE, markets, asOf.toISOString()],
-    );
-    rows.push(...batch.rows);
-    if (batch.rows.length < TITLE_BATCH_SIZE) return rows;
-    const next = batch.rows.at(-1)!.source_id;
+    const batch = await sitemapSourceBatch(database, markets, asOf, cursor);
+    rows.push(...batch);
+    if (batch.length < TITLE_BATCH_SIZE) return rows;
+    const next = batch.at(-1)!.source_id;
     if (next === cursor) throw new Error('Sitemap source cursor stalled');
     cursor = next;
   }
+}
+
+export async function sitemapSourceBatch(
+  database: Database,
+  markets: string[],
+  asOf: Date,
+  cursor: string,
+  upperTitleId: string | null = null,
+) {
+  return (
+    await database.query<SitemapTitleRow & { source_id: string }>(sourceBatch, [
+      cursor,
+      TITLE_BATCH_SIZE,
+      markets,
+      asOf.toISOString(),
+      upperTitleId,
+    ])
+  ).rows;
 }

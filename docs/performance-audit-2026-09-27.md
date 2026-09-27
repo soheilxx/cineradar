@@ -120,3 +120,35 @@ Neue Messung gegen Produktion, ohne Katalogcache und mit sequenziellen Abfragen:
 Die Messungen stammen aus unterschiedlichen Lastsituationen. Lucifer liefert elf Treffer und tv:63174 auf Rang eins. Der erste lokale vollständige Home-Abruf überschritt noch 20 Sekunden: Die zusätzliche Neuheiten-Reihe wurde anschließend als weiterer Engpass identifiziert. Die Messung des bereits warmen Home-Abrufs: 113 ms bis Header / 2.604 ms kompletter HTML-Stream; Filmübersicht 632/636 ms; Such-API 987/988 ms. Diese Werte sind lokale Produktionsbuild-Messungen mit echten Daten, keine öffentlichen Core Web Vitals.
 
 Validierung bis zu diesem Stand: 270 Tests bestanden, Produktionsbuild und Lint erfolgreich; zwei Chromium-E2E-Tests für Sprachwechsel/Verlauf, beide Suchmodi und echte 404 bestanden; Desktop 1440 px und Mobile 390 px ohne Überbreite oder Browserfehler geprüft.
+
+## Veröffentlichung und Live-Nachmessung
+
+Commit `39e8624` wurde auf `main` gepusht. Vercel meldet Deployment `dpl_8EVMChf7nTP6ZPsJvDVKEGyZ2dsq` als Ready; `cineradar.tv` und `www.cineradar.tv` zeigen auf dieses Deployment. Migration 016 wurde anschließend mit `CREATE INDEX CONCURRENTLY` abgeschlossen und als gültig geprüft. Der Aufbau dauerte 262 Sekunden.
+
+| Öffentlicher Abruf | HTTP | Antwortheader | Vollständiger HTML-/JSON-Body |
+| --- | --- | --- | --- |
+| Startseite, erster Messabruf | 200 | 467 ms | 6.544 ms |
+| Startseite, Folgeabruf | 200 | 157 ms | 482 ms |
+| Filmübersicht | 200 | 648 ms | 676 ms |
+| Lucifer-Suche | 200 | 625 ms | 626 ms |
+| Nicht vorhandener Titel | 404 | 104 ms | 106 ms |
+
+Diese Messungen umfassen den HTML-/API-Transfer, nicht den Abschluss sämtlicher Bilddownloads oder Core Web Vitals. Der erste Abruf liefert die Oberfläche früh und streamt weitere Reihen nach. Die normale Suche und der erst bei Bedarf geladene KI-Titelfinder wurden im Codex-Browser auf der öffentlichen Domain geprüft; alle sieben nachgeladenen Inhaltsreihen waren vorhanden, ohne horizontalen Überlauf oder Konsolenfehler.
+
+Die einmalige Neuheiten-Abfrage nach Migration 016 benötigte 2,20 Sekunden statt zuvor 9,79 Sekunden. Der zugehörige `EXPLAIN`-Plan nutzte vorhandene Angebotsindizes, nicht den neuen Datumsindex; eine kausale Verbesserung durch diesen zusätzlichen Index ist damit nicht belegt.
+
+Der anschließende vollständige Sitemap-Probelauf scheiterte nach 157,6 Sekunden in der Phase `artifacts` am Zeitbudget. Die Quelle wurde vollständig gelesen; die synchrone Verarbeitung aller URL-Varianten konnte das Budget jedoch zwischen zwei Prüfungen überschreiten. Die bisherige Sitemap-Generation blieb erhalten. Eine dauerhaft wiederaufnehmbare Verarbeitung in kleinen Schritten wird deshalb zusätzlich umgesetzt; der erste Live-Release allein löst diesen verbliebenen Exportengpass noch nicht vollständig.
+
+## Ergänzende Korrektur des Sitemap-Exports
+
+Migration 017 wurde anschließend erfolgreich angewendet (1,0 Sekunden). Die benötigten Indizes wurden zuvor ohne Schreibsperre aufgebaut. Der Publisher verarbeitet nun einen gespeicherten Build in begrenzten Schritten: 100 Titel lesen, höchstens 1.000 URL-Datensätze je Schreibzugriff speichern, Landingseiten abschließen, geprüfte XML-Dateien erzeugen, entfernte Varianten abgleichen und abschließend den öffentlichen Index atomar wechseln. Ein normaler Cron-Aufruf arbeitet höchstens 45 Sekunden an neuen Schritten; jede zusätzliche Abfrage prüft dieses Budget. Ein bereits laufendes Statement bleibt durch das Datenbanklimit begrenzt.
+
+- Gesunde Zwischenstände werden beim nächsten Cron fortgesetzt; echte Fehler behalten den 15-Minuten-Abstand. Beide Fälle erhalten den bisherigen öffentlichen Index.
+- Checkpoints, reservierte Ordinals und feste Build-Zeitpunkte bleiben über Aufrufe erhalten. Auch teilweise gespeicherte Batches mit anschließend geändertem Slug, Genre oder gelöschtem Titel werden korrekt wiederholt.
+- Titel- und redaktionelle hreflang-Gruppen werden jeweils vollständig vor dem Speichern geprüft. Die einzigen Gruppen über Batchgrenzen hinweg – Landingseiten – werden zusätzlich per SQL geprüft. Millionen redundanter Prüfungen derselben Titelverweise entfallen.
+- Unveränderte XML-Shards werden wiederverwendet. Die Veröffentlichung prüft Dateinamen, Metadaten, Mengen, gültige Lease und mindestens einen qualifizierten Katalogtitel.
+- Die Bereinigung arbeitet separat in kleinen Batches. Alte öffentliche Dateien bleiben acht Tage ab Ablösung erhalten, auch wenn die abgelöste Generation zuvor lange unverändert war. Aktive Builds werden nicht bereinigt.
+
+Der reale Build konnte nach dem ersten Abschnitt mit 100 Titeln und 1.324 qualifizierten URLs korrekt fortgesetzt werden; der nachfolgende Abschnitt erreichte 32.245 URLs. Eine weitere Live-Messung während des Exports: französische Startseite HTTP 200, 661 ms bis zu den Headern und 1.199 ms für den vollständigen HTML-Body. Der vollständige initiale Neuaufbau wird weiterhin in begrenzten Abschnitten durchgeführt; der Besucherbetrieb wartet nicht auf dessen Abschluss.
+
+Abschließende Prüfung des gesamten Codes: **280 Tests bestanden**, Produktionsbuild, Typecheck, Lint und `git diff --check` erfolgreich. Darin enthalten sind Upgrade, Wiederaufnahme ohne Force, unveränderte öffentliche Generation während Teilständen, Abbruch nach Artefaktspeicherung, konkurrierende Lease-Übernahme, Slug-/Genreänderung und Titellöschung während eines Replays sowie begrenzte Bereinigung und Dateiaufbewahrung.
